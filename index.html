@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<!--
+Timing Calculator - a port of the video timing calculations from Custom Resolution Utility (CRU)
+Copyright (C) 2012-2025 ToastyX (original CRU source, https://www.monitortests.com/)
+This file is derived from CRU's source code and is distributed under the GNU General Public License,
+version 3 or later, WITHOUT ANY WARRANTY. See https://www.gnu.org/licenses/gpl-3.0.html
+This file is plainly marked as an altered, non-original version: it is not CRU.
+-->
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Timing Calculator</title>
+<style>
+:root{--bg:#f3f3f3;--fg:#1a1a1a;--mut:#777;--in:#fff;--ln:#c9c9c9;--ac:#0b62d6;--er:#c0392b;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1e1f22;--fg:#e8e8e8;--mut:#8a8a8a;--in:#2b2d31;--ln:#45474d;--ac:#4c9aff;--er:#ff7b6b}}
+:root[data-theme="dark"]{--bg:#1e1f22;--fg:#e8e8e8;--mut:#8a8a8a;--in:#2b2d31;--ln:#45474d;--ac:#4c9aff;--er:#ff7b6b}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.3 "Segoe UI",system-ui,-apple-system,Roboto,sans-serif}
+main{max-width:460px;margin:0 auto;padding:12px}
+fieldset{border:1px solid var(--ln);border-radius:4px;margin:10px 0;padding:6px 10px 10px}
+legend{padding:0 4px}
+.top{display:flex;gap:8px;align-items:center}
+select,input[type=text]{font:inherit;color:var(--fg);background:var(--in);border:1px solid var(--ln);border-radius:3px;padding:7px 8px;min-width:0}
+select{flex:1}
+input:read-only{background:transparent;color:var(--mut)}
+input:focus,select:focus{outline:2px solid var(--ac);outline-offset:-1px}
+.g{display:grid;grid-template-columns:auto 1fr 1fr;gap:6px 8px;align-items:center}
+.g b{text-align:center}
+.g label{display:flex;align-items:center;gap:6px;white-space:nowrap}
+.g input[type=text]{width:100%;box-sizing:border-box;text-align:right}
+.f{display:grid;grid-template-columns:auto 1fr auto;gap:6px 8px;align-items:center}
+.f label{display:flex;align-items:center;gap:6px;white-space:nowrap}
+.f input[type=text]{width:100%;box-sizing:border-box;text-align:right}
+.f span,.u{color:var(--mut);font-size:.85em}
+input[type=radio]{accent-color:var(--ac);width:18px;height:18px;margin:0}
+.act{grid-column:1/-1;display:flex;justify-content:space-between;color:var(--mut);font-size:.9em}
+#err{color:var(--er);min-height:1.3em;margin:4px 2px}
+button{font:inherit;color:#fff;background:var(--ac);border:0;border-radius:4px;padding:9px 14px}
+.row label{display:flex;align-items:center;gap:8px}input[type=checkbox]{accent-color:var(--ac);width:18px;height:18px;margin:0}
+.row{display:flex;gap:8px;align-items:center;justify-content:space-between}
+</style></head><body><main>
+<div class="top"><span>Timing:</span><select id="mode"></select></div>
+<fieldset><legend>Parameters</legend>
+<div class="g" id="grid"><span></span><b>Horizontal</b><b>Vertical</b></div>
+<div class="g" style="margin-top:8px"><span>Sync polarity:</span>
+<select id="hp"><option value="1">+</option><option value="0">−</option></select>
+<select id="vp"><option value="1">+</option><option value="0">−</option></select></div>
+</fieldset>
+<fieldset><legend>Frequency</legend><div class="f" id="freq"></div></fieldset>
+<div id="err"></div>
+<div class="row"><label><input type="checkbox" id="il">Interlaced</label>
+<button id="copy">Copy</button></div>
+<p style="color:var(--mut);font-size:.75em;margin:14px 2px 0">Based on Custom Resolution Utility by ToastyX (GPLv3). Not the original software; no warranty.</p></main>
+<script>
+const S={il:false,man:true,mode:0,ha:3840,va:2160,hf:48,hs:32,hb:480,vf:4,vs:4,vb:4,hbl:0,htot:0,vbl:0,vtot:0,hp:1,vp:0,
+last:0,lr:0,vrate:60000,hrate:0,pclock:0,prec:100,ahr:0,avr:0,err:''};
+const F=Math.floor,C=Math.ceil;
+
+const fl=()=>S.il?2:1,dv=()=>1e9*fl()/S.prec;
+const NAMES=["Manual", "Automatic PC", "Automatic HDTV", "Automatic CRT", "Native PC", "Native HDTV", "Exact", "Exact reduced", "Exact CRT", "CVT standard", "CVT-RB standard", "CVT-RB2 standard", "GTF standard", "Vertical total calculator (QFT)"],NAT=[[1920,1080,0,60000],[1920,1080,1,60000],[1600,900,0,60000],[1366,768,0,59789],[1360,768,0,60015],[1280,720,0,60000],[1440,576,1,50000],[1440,480,1,59940],[720,576,0,50000],[720,480,0,59940],[640,480,0,60000]],TBL={"pc":[[1920,1080,0,59500,60500,88,44,148,4,5,36,1,1],[1920,1080,0,49500,50500,528,44,148,4,5,36,1,1],[1920,1080,0,47500,48500,638,44,148,4,5,36,1,1],[1920,1080,0,29500,30500,88,44,148,4,5,36,1,1],[1920,1080,0,24500,25500,528,44,148,4,5,36,1,1],[1920,1080,0,23500,24500,638,44,148,4,5,36,1,1],[1920,1080,1,59500,60500,88,44,148,4,10,31,1,1],[1920,1080,1,49500,50500,528,44,148,4,10,31,1,1],[1600,900,0,59500,60500,24,80,96,1,3,96,1,1],[1366,768,0,59500,60500,70,143,213,3,3,24,1,1],[1360,768,0,59500,60500,64,112,256,3,6,18,1,1],[1280,720,0,59500,60500,110,40,220,5,5,20,1,1],[1280,720,0,49500,50500,440,40,220,5,5,20,1,1],[1280,720,0,47500,48500,960,40,220,5,5,20,1,1],[1280,720,0,29500,30500,1760,40,220,5,5,20,1,1],[1280,720,0,24500,25500,2420,40,220,5,5,20,1,1],[1280,720,0,23500,24500,1760,40,220,5,5,20,1,1],[1440,576,1,49500,50500,24,126,138,4,6,39,0,0],[1440,480,1,59500,60500,38,124,114,8,6,31,0,0],[720,576,0,49500,50500,12,64,68,5,5,39,0,0],[720,480,0,59500,60500,16,62,60,9,6,30,0,0],[640,480,0,59500,60500,16,96,48,10,2,33,0,0]],"hdtv":[[10240,4320,0,119500,120500,288,176,296,16,20,144,1,1],[10240,4320,0,99500,100500,2192,176,592,16,20,144,1,1],[10240,4320,0,59500,60500,288,176,296,16,20,144,1,1],[10240,4320,0,49500,50500,2492,176,592,16,20,44,1,1],[10240,4320,0,47500,48500,1492,176,592,16,20,594,1,1],[10240,4320,0,29500,30500,288,176,296,16,20,144,1,1],[10240,4320,0,24500,25500,2492,176,592,16,20,44,1,1],[10240,4320,0,23500,24500,1492,176,592,16,20,594,1,1],[7680,4320,0,119500,120500,352,176,592,16,20,144,1,1],[7680,4320,0,99500,100500,2112,176,592,16,20,144,1,1],[7680,4320,0,59500,60500,552,176,592,16,20,44,1,1],[7680,4320,0,49500,50500,2352,176,592,16,20,44,1,1],[7680,4320,0,47500,48500,2552,176,592,16,20,144,1,1],[7680,4320,0,29500,30500,552,176,592,16,20,44,1,1],[7680,4320,0,24500,25500,2352,176,592,16,20,44,1,1],[7680,4320,0,23500,24500,2552,176,592,16,20,144,1,1],[5120,2160,0,119500,120500,164,88,128,8,10,72,1,1],[5120,2160,0,99500,100500,1096,88,296,8,10,72,1,1],[5120,2160,0,59500,60500,164,88,128,8,10,72,1,1],[5120,2160,0,49500,50500,1096,88,296,8,10,72,1,1],[5120,2160,0,47500,48500,746,88,296,8,10,297,1,1],[5120,2160,0,29500,30500,664,88,128,8,10,22,1,1],[5120,2160,0,24500,25500,1696,88,296,8,10,22,1,1],[5120,2160,0,23500,24500,1996,88,296,8,10,22,1,1],[4096,2160,0,119500,120500,88,88,128,8,10,72,1,1],[4096,2160,0,99500,100500,800,88,296,8,10,72,1,1],[4096,2160,0,59500,60500,88,88,128,8,10,72,1,1],[4096,2160,0,49500,50500,968,88,128,8,10,72,1,1],[4096,2160,0,47500,48500,1020,88,296,8,10,72,1,1],[4096,2160,0,29500,30500,88,88,128,8,10,72,1,1],[4096,2160,0,24500,25500,968,88,128,8,10,72,1,1],[4096,2160,0,23500,24500,1020,88,296,8,10,72,1,1],[3840,2160,0,119500,120500,176,88,296,8,10,72,1,1],[3840,2160,0,99500,100500,1056,88,296,8,10,72,1,1],[3840,2160,0,59500,60500,176,88,296,8,10,72,1,1],[3840,2160,0,49500,50500,1056,88,296,8,10,72,1,1],[3840,2160,0,47500,48500,1276,88,296,8,10,72,1,1],[3840,2160,0,29500,30500,176,88,296,8,10,72,1,1],[3840,2160,0,24500,25500,1056,88,296,8,10,72,1,1],[3840,2160,0,23500,24500,1276,88,296,8,10,72,1,1],[2560,1080,0,119500,120500,548,44,148,4,5,161,1,1],[2560,1080,0,99500,100500,218,44,148,4,5,161,1,1],[2560,1080,0,59500,60500,248,44,148,4,5,11,1,1],[2560,1080,0,49500,50500,548,44,148,4,5,36,1,1],[2560,1080,0,47500,48500,998,44,148,4,5,11,1,1],[2560,1080,0,29500,30500,768,44,148,4,5,36,1,1],[2560,1080,0,24500,25500,448,44,148,4,5,36,1,1],[2560,1080,0,23500,24500,998,44,148,4,5,11,1,1],[1920,1080,0,119500,120500,88,44,148,4,5,36,1,1],[1920,1080,0,99500,100500,528,44,148,4,5,36,1,1],[1920,1080,0,59500,60500,88,44,148,4,5,36,1,1],[1920,1080,0,49500,50500,528,44,148,4,5,36,1,1],[1920,1080,0,47500,48500,638,44,148,4,5,36,1,1],[1920,1080,0,29500,30500,88,44,148,4,5,36,1,1],[1920,1080,0,24500,25500,528,44,148,4,5,36,1,1],[1920,1080,0,23500,24500,638,44,148,4,5,36,1,1],[1920,1080,1,119500,120500,88,44,148,4,10,31,1,1],[1920,1080,1,99500,100500,528,44,148,4,10,31,1,1],[1920,1080,1,59500,60500,88,44,148,4,10,31,1,1],[1920,1080,1,49500,50500,528,44,148,4,10,31,1,1],[1680,720,0,119500,120500,60,40,220,5,5,95,1,1],[1680,720,0,99500,100500,60,40,220,5,5,95,1,1],[1680,720,0,59500,60500,260,40,220,5,5,20,1,1],[1680,720,0,49500,50500,260,40,220,5,5,20,1,1],[1680,720,0,47500,48500,810,40,220,5,5,20,1,1],[1680,720,0,29500,30500,700,40,220,5,5,20,1,1],[1680,720,0,24500,25500,1228,40,220,5,5,20,1,1],[1680,720,0,23500,24500,1360,40,220,5,5,20,1,1],[1600,900,0,59500,60500,24,80,96,1,3,96,1,1],[1366,768,0,59500,60500,70,143,213,3,3,24,1,1],[1360,768,0,59500,60500,64,112,256,3,6,18,1,1],[1280,720,0,119500,120500,110,40,220,5,5,20,1,1],[1280,720,0,99500,100500,440,40,220,5,5,20,1,1],[1280,720,0,59500,60500,110,40,220,5,5,20,1,1],[1280,720,0,49500,50500,440,40,220,5,5,20,1,1],[1280,720,0,47500,48500,960,40,220,5,5,20,1,1],[1280,720,0,29500,30500,1760,40,220,5,5,20,1,1],[1280,720,0,24500,25500,2420,40,220,5,5,20,1,1],[1280,720,0,23500,24500,1760,40,220,5,5,20,1,1],[1440,576,1,199500,200500,24,126,138,4,6,39,0,0],[1440,576,1,99500,100500,24,126,138,4,6,39,0,0],[1440,576,1,49500,50500,24,126,138,4,6,39,0,0],[1440,480,1,239500,240500,38,124,114,8,6,31,0,0],[1440,480,1,119500,120500,38,124,114,8,6,31,0,0],[1440,480,1,59500,60500,38,124,114,8,6,31,0,0],[720,576,0,199500,200500,12,64,68,5,5,39,0,0],[720,576,0,99500,100500,12,64,68,5,5,39,0,0],[720,576,0,49500,50500,12,64,68,5,5,39,0,0],[720,480,0,239500,240500,16,62,60,9,6,30,0,0],[720,480,0,119500,120500,16,62,60,9,6,30,0,0],[720,480,0,59500,60500,16,62,60,9,6,30,0,0],[640,480,0,59500,60500,16,96,48,10,2,33,0,0]],"crt":[[1920,1440,0,74500,75500,144,224,352,1,3,56,0,1],[1920,1440,0,59500,60500,128,208,344,1,3,56,0,1],[1856,1392,0,74500,75500,128,224,352,1,3,104,0,1],[1856,1392,0,59500,60500,96,224,352,1,3,43,0,1],[1792,1344,0,74500,75500,96,216,352,1,3,69,0,1],[1792,1344,0,59500,60500,128,200,328,1,3,46,0,1],[1600,1200,0,84500,85500,64,192,304,1,3,46,1,1],[1600,1200,0,74500,75500,64,192,304,1,3,46,1,1],[1600,1200,0,69500,70500,64,192,304,1,3,46,1,1],[1600,1200,0,64500,65500,64,192,304,1,3,46,1,1],[1600,1200,0,59500,60500,64,192,304,1,3,46,1,1],[1280,1024,0,84500,85500,64,160,224,1,3,44,1,1],[1280,1024,0,74500,75500,16,144,248,1,3,38,1,1],[1280,1024,0,59500,60500,48,112,248,1,3,38,1,1],[1280,960,0,84500,85500,64,160,224,1,3,47,1,1],[1280,960,0,59500,60500,96,112,312,1,3,36,1,1],[1152,864,0,74500,75500,64,128,256,1,3,32,1,1],[1024,768,0,84500,85500,48,96,208,1,3,36,1,1],[1024,768,0,74500,75500,16,96,176,1,3,28,1,1],[1024,768,0,69500,70500,24,136,144,3,6,29,0,0],[1024,768,0,59500,60500,24,136,160,3,6,29,0,0],[800,600,0,84500,85500,32,64,152,1,3,27,1,1],[800,600,0,74500,75500,16,80,160,1,3,21,1,1],[800,600,0,71500,72500,56,120,64,37,6,23,1,1],[800,600,0,59500,60500,40,128,88,1,4,23,1,1],[800,600,0,55500,56500,24,72,128,1,2,22,1,1],[1440,576,1,49500,50500,24,126,138,4,6,39,0,0],[1440,480,1,59500,60500,38,124,114,8,6,31,0,0],[720,576,0,49500,50500,12,64,68,5,5,39,0,0],[720,480,0,59500,60500,16,62,60,9,6,30,0,0],[640,480,0,84500,85500,56,56,80,1,3,25,0,0],[640,480,0,74500,75500,16,64,120,1,3,16,0,0],[640,480,0,71500,72500,24,40,128,9,3,28,0,0],[640,480,0,59500,60500,16,96,48,10,2,33,0,0]]};
+const vsA=()=>{const a=F(S.va*4000/S.ha);
+ for(const[l,h,v]of[[2205,2295,5],[2352,2448,7],[2450,2550,6],[2940,3060,4],[3136,3264,7]])if(a>=l&&a<=h)return v*fl();return 10*fl()};
+const fin=()=>{S.hbl=S.hf+S.hs+S.hb;S.htot=S.ha+S.hbl;S.vbl=S.vf+S.vs+S.vb;S.vtot=S.va+S.vbl};
+function setStd(k,vr){ // CVT / CVT-RB / CVT-RB2 / GTF, CRU integer math, Fields-aware
+ const{ha,va}=S,f=fl(),I=+S.il,hpd=(mt,d)=>F((F(1e15*f/vr)-mt*f)/d),mn=6*f+I;
+ if(!(vr>0))return false;
+ if(k=='cvt'||k=='gtf'){
+  const g=k=='gtf',mt=550e6,hp=hpd(mt,va+(g?1:3)*f+I);
+  if(!(hp>0))return false;
+  S.vf=(g?1:3)*f;S.vs=g?3*f:vsA();
+  S.vb=Math.max(mn,(g?F((F(mt*2/hp)+1)/2):F(mt/hp)+1)*f+I-S.vs);
+  let idc=30e9-300*hp,hbl;
+  if(g)hbl=F((F(ha*idc/(1e11-idc))+8)/16)*16;
+  else{idc=Math.max(idc,2e10);hbl=F(F(ha*idc/(1e11-idc))/16)*16}
+  S.hs=F((ha+hbl+(g?50:0))/100)*8;S.hb=F(hbl/2);S.hf=S.hb-S.hs;S.hp=0;S.vp=1;
+ }else{
+  const hp=hpd(46e7,va);if(!(hp>0))return false;
+  const vbl=(F(46e7/hp)+1)*f+I;S.hp=1;S.vp=0;
+  if(k=='rb'){S.hf=48;S.hs=32;S.hb=80;S.vf=3*f;S.vs=vsA();S.vb=Math.max(mn,vbl-S.vf-S.vs)}
+  else{S.hf=8;S.hs=32;S.hb=40;S.vs=8*f;S.vb=mn;S.vf=Math.max(f,vbl-S.vs-S.vb)}
+ }
+ fin();return true}
+function std(k,vr=S.vrate){ // CRU runs it twice: second pass uses the achieved refresh rate
+ if(!setStd(k,vr))return false;
+ const d=dv(),pc=C(vr*S.htot*S.vtot/d),a=F(pc*d/S.htot/S.vtot);
+ if(!setStd(k,a))return false;S.vr2=a;return true}
+function auto(T,fb,vr){
+ const e=T.find(r=>r[0]==S.ha&&r[1]==S.va&&r[2]==+S.il&&vr>=r[3]&&vr<=r[4]);
+ if(e){[S.hf,S.hs,S.hb,S.vf,S.vs,S.vb,S.hp,S.vp]=e.slice(5);fin();
+  const pc=C(vr*S.htot*S.vtot/dv());if(pc>=1&&pc<=16777216)return true}
+ return std(fb,vr)}
+function nat(T){const e=NAT.find(r=>r[0]==S.ha&&r[1]==S.va&&r[2]==+S.il);
+ const r=auto(T,'rb',e?e[3]:60000);S.vr2=null;return r}
+function manH(v){const l=S.last;
+ if(l==1)S.hb=S.hbl-S.hf-S.hs;else if(l==2)S.hb=S.htot-S.ha-S.hf-S.hs;
+ if(v){if(l==1)S.vb=S.vbl-S.vf-S.vs;else if(l==2)S.vb=S.vtot-S.va-S.vf-S.vs}}
+function exact(red){
+ const f=fl(),il=+S.il,q=il?160:80;S.hf=48;S.hs=32;S.vf=3*f;S.vs=vsA();
+ S.htot=F((S.ha+S.hf+S.hs+q)/q)*q;
+ const vt=Q=>il?F((S.va+S.vf+S.vs+Q)/(2*Q))*2*Q+Q:F((S.va+S.vf+S.vs+Q)/Q)*Q,sm=()=>red&&(S.htot%400==0||S.vrate%5000==0);
+ const bk=()=>{S.hb=S.htot-S.ha-S.hf-S.hs;S.vb=S.vtot-S.va-S.vf-S.vs;fin()};
+ S.vtot=vt(sm()?25:125);bk();
+ if(red&&!il&&S.ha*S.va<=2048*1200&&C(S.vrate*S.htot*S.vtot/dv())>165*S.prec){
+  S.hf=24;S.htot=F((S.ha+S.hf+S.hs+80)/80)*80;S.vf=3;S.vs=vsA();S.vtot=vt(sm()?25:125);bk()}
+ return true}
+function CalculateManual(){manH(1);fin();return true}
+function CalculateManualVTotal(){manH(0);S.hbl=S.hf+S.hs+S.hb;S.htot=S.ha+S.hbl;
+ let v=F(S.pclock*dv()/S.htot/S.vrate);if(S.il&&v%2==0)v--;S.vb=v-S.va-S.vf-S.vs;fin();return true}
+function CalculateAutomaticPC(){return auto(TBL.pc,'rb',S.vrate)}
+function CalculateAutomaticHDTV(){return auto(TBL.hdtv,'rb',S.vrate)}
+function CalculateAutomaticCRT(){return auto(TBL.crt,'cvt',S.vrate)}
+function CalculateNativePC(){return nat(TBL.pc)}
+function CalculateNativeHDTV(){return nat(TBL.hdtv)}
+function CalculateExact(){return exact(0)}
+function CalculateExactReduced(){return exact(1)}
+function CalculateExactCRT(){
+ if(!std('cvt'))return false;S.vr2=null;
+ if(S.il){S.htot=F((S.htot+159)/160)*160;S.vtot=F((S.vtot+124)/250)*250+125}
+ else{S.htot=F((S.htot+79)/80)*80;S.vtot=F((S.vtot+124)/125)*125}
+ S.hb=S.htot-S.ha-S.hf-S.hs;S.vb=S.vtot-S.va-S.vf-S.vs;fin();return true}
+function CalculateCVTStandard(){return std('cvt')}
+function CalculateCVTRBStandard(){return std('rb')}
+function CalculateCVTRB2Standard(){return std('rb2')}
+function CalculateGTFStandard(){return std('gtf')}
+const FNS=[CalculateManual,CalculateAutomaticPC,CalculateAutomaticHDTV,CalculateAutomaticCRT,CalculateNativePC,CalculateNativeHDTV,CalculateExact,CalculateExactReduced,CalculateExactCRT,CalculateCVTStandard,CalculateCVTRBStandard,CalculateCVTRB2Standard,CalculateGTFStandard,CalculateManualVTotal];
+function calc(){
+ S.vr2=null;S.err='';const fn=FNS[S.mode],ok=fn();
+ S.man=fn==CalculateManual||fn==CalculateManualVTotal;
+ const d=dv(),hd=1e6/S.prec,t=S.htot*S.vtot,lr=S.man?S.lr:0;let pc;
+ if(lr==0)pc=C((S.vr2??S.vrate)*t/d);else if(lr==1)pc=C(S.hrate*S.htot/hd);else pc=S.pclock;
+ S.pclock=pc;S.avr=F(pc*d/t);S.ahr=F(pc*hd/S.htot);
+ S.hrate=S.ahr;if(lr!=0)S.vrate=S.avr;
+ if(!ok||!(S.hb>=0&&S.vb>=0&&pc>=1&&pc<=16777216&&S.ha>0&&S.va>0&&S.hf>0&&S.hs>0&&S.vf>0&&S.vs>0&&isFinite(t))){
+  S.err=ok?'Values out of range':'Cannot calculate this timing';return false}
+ return true}
+function toggleIl(v){ // CRU's progressive <-> interlaced value conversion
+ if(v==S.il)return;const{ha,va,vf,vs,vb}=S;let n;
+ if(!v){n=va==1080&&vf==4&&vs==10&&vb==31?[1080,4,5,36]:[va,F(vf/2),F(vs/2),F(vb/2)]}
+ else{n=va==1080&&vf==4&&vs==5&&vb==36?[1080,4,10,31]:[(va%2||(ha>=va*2&&va!=480&&va!=576))?va*2:va,vf*2,vs*2,vb*2+1];
+  if(S.vrate<45000)S.vrate*=2}
+ S.il=v;[S.va,S.vf,S.vs,S.vb]=n;S.vbl=n[1]+n[2]+n[3];S.vtot=n[0]+S.vbl;calc()}
+// ---- UI ----
+if(typeof document!=='undefined'){
+const $=id=>document.getElementById(id);
+const ROWS=[["Active","ha","va"],["Front porch","hf","vf"],["Sync width","hs","vs"],["Back porch","hb","vb",0],["Blanking","hbl","vbl",1],["Total","htot","vtot",2]];
+const FR=[["Refresh rate","vrate","Hz",0],["Horizontal","hrate","kHz",1],["Pixel clock","pclock","MHz",2]];
+$('mode').innerHTML=NAMES.map((n,v)=>`<option value="${v}">${n}</option>`).join('');
+$('grid').insertAdjacentHTML('beforeend',ROWS.map(([n,h,v,r],i)=>{
+ const lab=r===undefined?`<span>${n}:</span>`:`<label><input type="radio" name="last" value="${r}">${n}:</label>`;
+ return lab+`<input type="text" inputmode="numeric" id="${h}"><input type="text" inputmode="numeric" id="${v}">`}).join(''));
+$('freq').innerHTML=FR.map(([n,k,u,r])=>`<label><input type="radio" name="lr" value="${r}">${n}:</label><input type="text" inputmode="decimal" id="${k}"><span>${u}</span>`).join('')
+ +'<div class="act"><span id="avr"></span><span id="ahr"></span></div>';
+const dig=()=>S.prec==100?2:3;
+const fmt={vrate:v=>(v/1000).toFixed(3),hrate:v=>(v/1000).toFixed(3),pclock:v=>(v/S.prec).toFixed(dig())};
+const parse={vrate:x=>Math.round(parseFloat(x)*1000),hrate:x=>Math.round(parseFloat(x)*1000),pclock:x=>Math.round(parseFloat(x)*S.prec)};
+const KEYS=ROWS.flatMap(r=>[r[1],r[2]]),RK=['vrate','hrate','pclock'];
+function render(){
+ const ok=!S.err,man=S.man,lr=man?S.lr:0;
+ const BASE=['ha','va','hf','hs','vf','vs'];
+ for(const k of KEYS.concat(RK)){const e=$(k);if(e===document.activeElement)continue;const v=S[k];
+  e.value=!isFinite(v)?'':RK.includes(k)?((ok||k=='vrate')?fmt[k](v):''):((ok||BASE.includes(k))?v:'')}
+ ROWS.forEach(([n,h,v,r])=>{const ro=r===undefined?(h=='ha'?false:!man):(!man||S.last!=r);$(h).readOnly=$(v).readOnly=ro});
+ document.querySelectorAll('[name=last]').forEach(e=>{e.checked=+e.value==S.last;e.disabled=!man});
+ document.querySelectorAll('[name=lr]').forEach(e=>{e.checked=+e.value==lr;e.disabled=!man});
+ for(const[i,k]of RK.entries())$(k).readOnly=!(lr==i);
+ $('mode').value=S.mode;$('hp').value=S.hp;$('vp').value=S.vp;$('il').checked=S.il;
+ $('hp').disabled=$('vp').disabled=false;
+ $('avr').textContent=ok?'Actual: '+fmt.vrate(S.avr)+' Hz':'';
+ $('ahr').textContent=ok?'Actual: '+fmt.hrate(S.ahr)+' kHz':'';
+ $('err').textContent=S.err}
+function upd(){calc();render()}
+document.addEventListener('input',e=>{const k=e.target.id;
+ if(KEYS.includes(k))S[k]=parseInt(e.target.value,10);
+ else if(RK.includes(k))S[k]=parse[k](e.target.value);else return;upd()});
+$('mode').onchange=e=>{S.mode=+e.target.value;upd()};
+$('hp').onchange=e=>{S.hp=+e.target.value;upd()};$('vp').onchange=e=>{S.vp=+e.target.value;upd()};
+document.querySelectorAll('[name=last]').forEach(e=>e.onchange=()=>{S.last=+e.value;upd()});
+document.querySelectorAll('[name=lr]').forEach(e=>e.onchange=()=>{S.lr=+e.value;upd()});
+$('il').onchange=e=>{toggleIl(e.target.checked);render()};
+$('copy').onclick=()=>{if(S.err)return;const{ha,hf,hs,htot,va,vf,vs,vtot}=S;
+ const t=`Modeline "${ha}x${va}_${(S.avr/1000).toFixed(2)}" ${(S.pclock/S.prec).toFixed(dig())} ${ha} ${ha+hf} ${ha+hf+hs} ${htot} ${va} ${va+vf} ${va+vf+vs} ${vtot} ${S.hp?'+':'-'}hsync ${S.vp?'+':'-'}vsync${S.il?' Interlace':''}\n`+
+ `H: ${ha}+${hf}+${hs}+${S.hb}=${htot}  V: ${va}+${vf}+${vs}+${S.vb}=${vtot}\nPclk ${(S.pclock/S.prec).toFixed(dig())} MHz, ${fmt.hrate(S.ahr)} kHz, ${fmt.vrate(S.avr)} Hz`;
+ try{navigator.clipboard.writeText(t)}catch(_){}$('copy').textContent='Copied';setTimeout(()=>$('copy').textContent='Copy',1200)};
+upd();
+}else globalThis.T={S,calc};
+</script></body></html>
