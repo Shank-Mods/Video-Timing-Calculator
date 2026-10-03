@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<!-- Resolution Graph: part of Video-Timing-Calculator (https://github.com/Shank-Mods/Video-Timing-Calculator).
+     Original code, not derived from CRU. Distributed under the repository license. No warranty. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Resolution Graph</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef0ec;--panel:#fff;--ink:#1c2420;--mute:#66706a;--grid:#d9ddd8;--hi:#0f6b5c;--lo:#c2571a;--il:#7a3fb0;--band:rgba(15,107,92,.14);
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141916;--panel:#1d241f;--ink:#e6ebe7;--mute:#97a39b;--grid:#2e3831;--hi:#4fd1b5;--lo:#f08c4d;--il:#c79bff;--band:rgba(79,209,181,.15)}}
+:root[data-theme="dark"]{--bg:#141916;--panel:#1d241f;--ink:#e6ebe7;--mute:#97a39b;--grid:#2e3831;--hi:#4fd1b5;--lo:#f08c4d;--il:#c79bff;--band:rgba(79,209,181,.15)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "Instrument Sans",system-ui,sans-serif}
+main{max-width:980px;margin:0 auto;padding:28px 18px 48px}
+h1{font-size:clamp(1.6rem,4vw,2.3rem);line-height:1.15;margin:0 0 6px;letter-spacing:-.02em}
+.sub{color:var(--mute);margin:0 0 22px;max-width:62ch}
+.ctl{display:flex;flex-wrap:wrap;gap:14px 18px;align-items:end;margin-bottom:18px}
+label{display:flex;flex-direction:column;font-size:.85rem;color:var(--mute);gap:4px}
+input{font:inherit;font-size:1.3rem;width:110px;padding:6px 10px;border:1.5px solid var(--grid);border-radius:6px;background:var(--panel);color:var(--ink)}
+input[type=number]{-moz-appearance:textfield;appearance:textfield}
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+input:focus-visible{outline:2px solid var(--hi);outline-offset:1px}
+.chartbox{background:var(--panel);border:1px solid var(--grid);border-radius:8px;padding:8px;position:relative}
+svg{display:block;width:100%;height:auto}
+svg text{fill:var(--mute);font:12px "Instrument Sans",system-ui,sans-serif}
+.tip{position:absolute;top:12px;right:12px;width:max-content;max-width:calc(100% - 24px);pointer-events:none;background:var(--ink);color:var(--bg);padding:6px 10px;border-radius:6px;font-size:.84rem;line-height:1.35;text-align:left;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ar{display:flex;align-items:center;gap:6px}.ar input{width:70px}.ar span{font-size:1.3rem;padding-bottom:6px}
+label.chk{flex-direction:row;align-items:center;gap:8px;color:var(--ink);font-size:1rem;padding-bottom:10px}
+input[type=checkbox]{width:20px;height:20px;padding:0;accent-color:var(--il)}
+.legend{display:flex;gap:18px;flex-wrap:wrap;font-size:.85rem;color:var(--mute);margin:10px 2px 0}
+.legend i{display:inline-block;width:18px;height:3px;vertical-align:middle;margin-right:6px}
+.tw{overflow-x:auto;margin-top:22px}
+table{border-collapse:collapse;width:100%;font-size:.92rem;background:var(--panel);border:1px solid var(--grid)}
+th,td{padding:8px 12px;text-align:right;border-bottom:1px solid var(--grid)}
+th:first-child,td:first-child{text-align:left}
+th{font-weight:600;color:var(--mute);font-size:.82rem}
+td.ok{color:var(--hi);font-weight:600}td.no{color:var(--mute)}
+.note{color:var(--mute);font-size:.82rem;max-width:70ch;margin-top:14px}
+</style>
+</head>
+<body>
+<main>
+<h1>What can your VGA monitor run?</h1>
+<p class="sub">Enter the horizontal scan range from the monitor's spec sheet. The chart shows the refresh rate a CVT mode reaches at each vertical resolution.</p>
+<div class="ctl">
+<label>Min horizontal (kHz)<input id="lo" type="number" step="0.1" min="5" max="300" value="30"></label>
+<label>Max horizontal (kHz)<input id="hi" type="number" step="0.1" min="5" max="300" value="64"></label>
+<label>Min vertical (Hz)<input id="vlo" type="number" step="1" min="10" max="400" value="60"></label>
+<label>Max vertical (Hz)<input id="vhi" type="number" step="1" min="10" max="400" value="160"></label>
+<label>Aspect ratio<div class="ar"><input id="aw" type="number" step="1" min="1" value="4"><span>:</span><input id="ah" type="number" step="1" min="1" value="3"></div></label>
+<label class="chk"><input id="il" type="checkbox">Show interlaced</label>
+</div>
+<div class="chartbox"><div id="tip" class="tip">Tap the chart for details</div><svg id="c" viewBox="0 0 900 460" role="img" aria-label="Refresh rate versus vertical resolution"></svg></div>
+<div class="legend"><span><i style="background:var(--hi)"></i>At maximum kHz</span><span><i style="background:var(--lo)"></i>At minimum kHz</span><span id="ilg" style="display:none"><i style="background:var(--il)"></i>Interlaced at max kHz (field rate)</span><span>Shaded: refresh rates your monitor can sync to</span></div>
+<div class="tw"><table><thead><tr><th>Mode</th><th>Refresh range</th><th id="ith" style="display:none">Interlaced</th></tr></thead><tbody id="rows"></tbody></table></div>
+<p class="note">Uses the CVT standard-blanking timing: refresh = fH ÷ (lines + 3 + 0.00055 × fH), with fH in Hz and 550 µs of vertical sync and back porch. Interlaced modes and pixel-clock rounding are not modelled, so treat results as approximate. Made by a dummy using an LLM.</p>
+</main>
+<script>
+const EXTRA={'4:3':[[1366,1024],[2048,1536],[3200,2400]],'16:9':[[427,240],[854,480],[2048,1152],[3200,1800]]};
+const LINES=[200,240,288,300,360,384,400,480,540,576,600,720,768,800,864,900,960,1024,1050,1080,1200,1440,1600,2160];
+const $=id=>document.getElementById(id);
+const rateI=(fh,L)=>{const f=fh*1000;return f/(L/2+3.5+550e-6*f)};
+const linesAtI=(fh,V)=>{const f=fh*1000;return 2*(f/V-3.5-550e-6*f)};
+const rate=(fh,L)=>{const f=fh*1000;return f/(L+3+550e-6*f)};
+const linesAt=(fh,V)=>{const f=fh*1000;return f/V-3-550e-6*f};
+const W=900,H=460,m={l:56,r:20,t:16,b:44};
+let last=null;
+function modesFor(ar){
+  let ex=[],ap=[];
+  LINES.forEach(h=>{const w=h*ar,r8=Math.round(w/8)*8;
+    if(Math.abs(w-r8)<.01)ex.push([r8,h]);else if(Math.abs(w-r8)/w<.01)ap.push([r8,h])});
+  const out=ex.length>=4?ex.slice():ex.concat(ap);
+  Object.entries(EXTRA).forEach(([k,l])=>{const[x,y]=k.split(':');
+    if(Math.abs(ar-x/y)<1e-6)l.forEach(q=>{if(!out.some(r=>r[0]==q[0]&&r[1]==q[1]))out.push(q)})});
+  return out.sort((p,q)=>p[1]-q[1]||p[0]-q[0]);
+}
+function draw(){
+  let a=parseFloat($('lo').value),b=parseFloat($('hi').value),v0=parseFloat($('vlo').value),v1=parseFloat($('vhi').value),
+      aw=parseFloat($('aw').value),ah=parseFloat($('ah').value);
+  const svg=$('c');
+  if(![a,b,v0,v1,aw,ah].every(x=>x>0)){svg.innerHTML='';return}
+  if(a>b)[a,b]=[b,a]; if(v0>v1)[v0,v1]=[v1,v0]; if(v1-v0<5)v1=v0+5;
+  const ar=aw/ah,IL=$('il').checked;
+  $('ilg').style.display=IL?'':'none';$('ith').style.display=IL?'':'none';
+  let xa=linesAt(a,v1),xb=linesAt(b,v0);if(IL){xa=Math.min(xa,linesAtI(a,v1));xb=Math.max(xb,linesAtI(b,v0))}
+  let X0=Math.max(50,Math.floor(xa/50)*50),X1=Math.min(2400,Math.ceil(xb/50)*50);
+  if(X1-X0<200)X1=X0+200;
+  const sx=v=>m.l+(v-X0)/(X1-X0)*(W-m.l-m.r), sy=v=>H-m.b-(v-v0)/(v1-v0)*(H-m.t-m.b);
+  const lim=L=>[Math.max(rate(a,L),v0),Math.min(rate(b,L),v1)];
+  const limI=L=>[Math.max(rateI(a,L),v0),Math.min(rateI(b,L),v1)];
+  let s=`<defs><clipPath id="cp"><rect x="${m.l}" y="${m.t}" width="${W-m.l-m.r}" height="${H-m.t-m.b}"/></clipPath></defs>`;
+  const ys=[5,10,20,25,50,100].find(k=>(v1-v0)/k<=8);
+  for(let y=Math.ceil(v0/ys)*ys;y<=v1;y+=ys)s+=`<line x1="${m.l}" x2="${W-m.r}" y1="${sy(y)}" y2="${sy(y)}" stroke="var(--grid)"/><text x="${m.l-8}" y="${sy(y)+4}" text-anchor="end">${y}</text>`;
+  const xs=(X1-X0)>1000?200:(X1-X0)>500?100:50;
+  for(let x=Math.ceil(X0/xs)*xs;x<=X1;x+=xs)s+=`<line x1="${sx(x)}" x2="${sx(x)}" y1="${m.t}" y2="${H-m.b}" stroke="var(--grid)"/><text x="${sx(x)}" y="${H-m.b+18}" text-anchor="middle">${x}p</text>`;
+  s+=`<text x="${(W+m.l)/2}" y="${H-6}" text-anchor="middle">Vertical resolution (lines)</text><text transform="translate(14 ${H/2}) rotate(-90)" text-anchor="middle">Refresh rate (Hz)</text>`;
+  const pts=(fh,fn=rate)=>{let p=[];for(let L=X0;L<=X1;L+=5)p.push([sx(L),Math.max(m.t-30,Math.min(H-m.b+30,sy(fn(fh,L))))]);return p};
+  const P1=pts(b),P0=pts(a),j=p=>p.map(q=>q.map(n=>n.toFixed(1)).join(',')).join(' ');
+  s+=`<g clip-path="url(#cp)"><polygon points="${j(P1)} ${j(P0.slice().reverse())}" fill="var(--band)"/>`;
+  s+=`<polyline points="${j(P0)}" fill="none" stroke="var(--lo)" stroke-width="2.5"/><polyline points="${j(P1)}" fill="none" stroke="var(--hi)" stroke-width="3"/>${IL?`<polyline points="${j(pts(b,rateI))}" fill="none" stroke="var(--il)" stroke-width="3" stroke-dasharray="8 5"/>`:''}</g>`;
+  const pY=(fn,h)=>{const hv=fn(b,h),lv=fn(a,h);return hv<=v1?{v:hv}:(lv>=v0&&lv<=v1?{v:lv,min:1}:null)};
+  const modes=modesFor(ar);
+  const placed=[];
+  const lab=(x,y,txt,st)=>{const w=txt.length*7+4;
+    for(const [dx,dy] of [[8,-8],[8,17],[8,-24],[8,32],[-w-8,-8],[-w-8,17]]){
+      const bx=x+dx,by=y+dy-11;
+      if(bx<m.l||bx+w>W-m.r||by<m.t||by+14>H-m.b)continue;
+      if(placed.some(p=>bx<p[0]+p[2]&&bx+w>p[0]&&by<p[1]+p[3]&&by+14>p[1]))continue;
+      placed.push([bx,by,w,14]);return `<text x="${bx}" y="${y+dy}" style="${st};font-weight:600">${txt}</text>`}
+    return ''};
+  modes.forEach(([w,h])=>{if(h<X0||h>X1)return;const [lo,hi]=lim(h);if(lo>hi)return;const pv=pY(rate,h);if(pv==null)return;
+    const x=sx(h),y=sy(pv.v);
+    s+=`<circle cx="${x}" cy="${y}" r="4.5" fill="var(--panel)" stroke="${pv.min?'var(--lo)':'var(--hi)'}" stroke-width="2"/>${lab(x,y,`${w}×${h}`,'fill:var(--ink)')}`});
+  if(IL)modes.forEach(([w,h])=>{if(h<X0||h>X1)return;const [lo,hi]=limI(h);if(lo>hi)return;if(rateI(b,h)>v1)return;const pv={v:rateI(b,h)};
+    const x=sx(h),y=sy(pv.v);
+    s+=`<rect x="${x-4}" y="${y-4}" width="8" height="8" fill="var(--panel)" stroke="var(--il)" stroke-width="2"/>${lab(x,y,`${w}×${h}i`,'fill:var(--il)')}`});
+  s+=`<line id="vl" y1="${m.t}" y2="${H-m.b}" stroke="var(--mute)" stroke-dasharray="3 3" style="display:none"/><rect id="ov" x="${m.l}" y="${m.t}" width="${W-m.l-m.r}" height="${H-m.t-m.b}" fill="transparent"/>`;
+  svg.innerHTML=s;
+  const tip=$('tip'),ov=$('ov'),vl=$('vl');
+  const show=L=>{const [lo,hi]=lim(L),w=Math.round(L*ar),[l2,h2]=limI(L),f=x=>x.toFixed(1),t=IL?' (p)':'';
+    vl.setAttribute('x1',sx(L));vl.setAttribute('x2',sx(L));vl.style.display='';
+    let h=`<b>${w}×${L}</b>`;
+    h+=lo>hi?`<br>Out of range${t}`:`<br>${f(hi)} Hz max${t}<br>${f(lo)} Hz min${t}`;
+    if(IL)h+=l2>h2?'<br>Out of range (i)':`<br>${f(h2)} Hz max (i)<br>${f(l2)} Hz min (i)`;
+    tip.innerHTML=h;
+    last=L};
+  const move=e=>{const r=svg.getBoundingClientRect(),px=(e.clientX-r.left)*W/r.width,
+    L=Math.round(X0+(px-m.l)/(W-m.l-m.r)*(X1-X0));if(L>=X0&&L<=X1)show(L)};
+  ov.addEventListener('pointermove',move);ov.addEventListener('pointerdown',move);
+  if(last&&last>=X0&&last<=X1)show(last);else tip.textContent='Tap the chart for details';
+  $('rows').innerHTML=modes.map(([w,h])=>{const [lo,hi]=lim(h);
+    const [l2,h2]=limI(h),ic=IL?(l2>h2?'<td class="no">Out of range</td>':`<td class="${h2>=60?'ok':'no'}">${l2.toFixed(0)}–${h2.toFixed(0)} Hz</td>`):'';
+    return lo>hi?`<tr><td>${w}×${h}</td><td class="no">Out of range</td>${ic}</tr>`:
+    `<tr><td>${w}×${h}</td><td class="${hi>=60?'ok':'no'}">${lo.toFixed(0)}–${hi.toFixed(0)} Hz</td>${ic}</tr>`}).join('');
+}
+const ids=['lo','hi','vlo','vhi','aw','ah'];
+ids.forEach((id,k)=>{const el=$(id);el.oninput=draw;
+  el.addEventListener('focus',()=>setTimeout(()=>el.select(),0));el.addEventListener('mouseup',e=>e.preventDefault());
+  el.addEventListener('keydown',e=>{if(e.key!=='Enter')return;e.preventDefault();
+    const nx=$(ids[k+1]);if(nx){nx.focus();nx.select()}else el.blur()})});
+$('il').onchange=draw;draw();
+</script>
+<script src="../tools.js"></script>
+</body>
+</html>

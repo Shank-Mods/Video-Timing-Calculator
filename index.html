@@ -35,7 +35,6 @@ input:focus,select:focus{outline:2px solid var(--ac);outline-offset:-1px}
 input[type=radio]{accent-color:var(--ac);width:18px;height:18px;margin:0}
 .act{grid-column:1/-1;display:flex;justify-content:space-between;color:var(--mut);font-size:.9em}
 #err{color:var(--er);min-height:1.3em;margin:4px 2px}
-button{font:inherit;color:#fff;background:var(--ac);border:0;border-radius:4px;padding:9px 14px}
 .row label{display:flex;align-items:center;gap:8px}input[type=checkbox]{accent-color:var(--ac);width:18px;height:18px;margin:0}
 .row{display:flex;gap:8px;align-items:center;justify-content:space-between}
 </style></head><body><main>
@@ -48,11 +47,10 @@ button{font:inherit;color:#fff;background:var(--ac);border:0;border-radius:4px;p
 </fieldset>
 <fieldset><legend>Frequency</legend><div class="f" id="freq"></div></fieldset>
 <div id="err"></div>
-<div class="row"><label><input type="checkbox" id="il">Interlaced</label>
-<button id="copy">Copy</button></div>
-<p style="color:var(--mut);font-size:.75em;margin:14px 2px 0">Based on Custom Resolution Utility by ToastyX (GPLv3). Not the original software; no warranty.</p></main>
+<div class="row"><label><input type="checkbox" id="il">Interlaced</label></div>
+<p style="color:var(--mut);font-size:.75em;margin:14px 2px 0">Based on the incredible free software <a href="https://www.monitortests.com/forum/Thread-Custom-Resolution-Utility-CRU" target="_blank" rel="noopener" style="color:var(--ac)">Custom Resolution Utility (CRU) by ToastyX</a>. This calculator was made by a dummy using an LLM, and has no affiliation to CRU or ToastyX.</p></main>
 <script>
-const S={il:false,man:true,mode:0,ha:3840,va:2160,hf:48,hs:32,hb:480,vf:4,vs:4,vb:4,hbl:0,htot:0,vbl:0,vtot:0,hp:1,vp:0,
+const S={il:false,man:true,mode:9,ha:640,va:480,hf:48,hs:32,hb:480,vf:4,vs:4,vb:4,hbl:0,htot:0,vbl:0,vtot:0,hp:1,vp:0,
 last:0,lr:0,vrate:60000,hrate:0,pclock:0,prec:100,ahr:0,avr:0,err:''};
 const F=Math.floor,C=Math.ceil;
 
@@ -177,10 +175,11 @@ $('hp').onchange=e=>{S.hp=+e.target.value;upd()};$('vp').onchange=e=>{S.vp=+e.ta
 document.querySelectorAll('[name=last]').forEach(e=>e.onchange=()=>{S.last=+e.value;upd()});
 document.querySelectorAll('[name=lr]').forEach(e=>e.onchange=()=>{S.lr=+e.value;upd()});
 $('il').onchange=e=>{toggleIl(e.target.checked);render()};
-$('copy').onclick=()=>{if(S.err)return;const{ha,hf,hs,htot,va,vf,vs,vtot}=S;
- const t=`Modeline "${ha}x${va}_${(S.avr/1000).toFixed(2)}" ${(S.pclock/S.prec).toFixed(dig())} ${ha} ${ha+hf} ${ha+hf+hs} ${htot} ${va} ${va+vf} ${va+vf+vs} ${vtot} ${S.hp?'+':'-'}hsync ${S.vp?'+':'-'}vsync${S.il?' Interlace':''}\n`+
- `H: ${ha}+${hf}+${hs}+${S.hb}=${htot}  V: ${va}+${vf}+${vs}+${S.vb}=${vtot}\nPclk ${(S.pclock/S.prec).toFixed(dig())} MHz, ${fmt.hrate(S.ahr)} kHz, ${fmt.vrate(S.avr)} Hz`;
- try{navigator.clipboard.writeText(t)}catch(_){}$('copy').textContent='Copied';setTimeout(()=>$('copy').textContent='Copy',1200)};
+document.querySelectorAll('input[type=text]').forEach(el=>{let sel=false;
+ el.addEventListener('focus',()=>{sel=true;el.select();setTimeout(()=>el.select(),0)});
+ el.addEventListener('mouseup',e=>{if(sel){e.preventDefault();sel=false}});
+ el.addEventListener('blur',()=>{sel=false})});
 upd();
 }else globalThis.T={S,calc};
-</script></body></html>
+</script>
+<script src="tools.js"></script></body></html>
