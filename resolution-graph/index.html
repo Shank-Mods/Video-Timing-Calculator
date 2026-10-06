@@ -6,32 +6,25 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Resolution Graph</title>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared.css">
 <style>
-:root{--bg:#eef0ec;--panel:#fff;--ink:#1c2420;--mute:#66706a;--grid:#d9ddd8;--hi:#0f6b5c;--lo:#c2571a;--il:#7a3fb0;--band:rgba(15,107,92,.14);
-box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141916;--panel:#1d241f;--ink:#e6ebe7;--mute:#97a39b;--grid:#2e3831;--hi:#4fd1b5;--lo:#f08c4d;--il:#c79bff;--band:rgba(79,209,181,.15)}}
-:root[data-theme="dark"]{--bg:#141916;--panel:#1d241f;--ink:#e6ebe7;--mute:#97a39b;--grid:#2e3831;--hi:#4fd1b5;--lo:#f08c4d;--il:#c79bff;--band:rgba(79,209,181,.15)}
-html{scroll-padding-top:env(safe-area-inset-top,0px)}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "Instrument Sans",system-ui,sans-serif}
-main{max-width:980px;margin:0 auto;padding:28px 18px 48px}
-h1{font-size:clamp(1.6rem,4vw,2.3rem);line-height:1.15;margin:0 0 6px;letter-spacing:-.02em}
-.sub{color:var(--mute);margin:0 0 22px;max-width:62ch}
-.ctl{display:flex;flex-wrap:wrap;gap:14px 18px;align-items:end;margin-bottom:18px}
-label{display:flex;flex-direction:column;font-size:.85rem;color:var(--mute);gap:4px}
-input{font:inherit;font-size:1.3rem;width:110px;padding:6px 10px;border:1.5px solid var(--grid);border-radius:6px;background:var(--panel);color:var(--ink)}
+:root{--hi:var(--accent);--lo:#c2571a;--il:#7a3fb0;--band:color-mix(in srgb,var(--accent) 14%,transparent);--grid:var(--line);--mute:var(--muted)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--lo:#f08c4d;--il:#c79bff}}
+:root[data-theme="dark"]{--lo:#f08c4d;--il:#c79bff}
+.ctl{display:flex;flex-wrap:wrap;gap:14px 18px;align-items:end;margin-bottom:8px}
+.ctl label{display:flex;flex-direction:column;gap:4px;margin:0}
+.ctl input{width:110px}
 input[type=number]{-moz-appearance:textfield;appearance:textfield}
 input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
-input:focus-visible{outline:2px solid var(--hi);outline-offset:1px}
-.chartbox{background:var(--panel);border:1px solid var(--grid);border-radius:8px;padding:8px;position:relative}
+.chartbox{background:var(--panel);border:1px solid var(--grid);border-radius:6px;padding:8px;position:relative}
 svg{display:block;width:100%;height:auto}
-svg text{fill:var(--mute);font:12px "Instrument Sans",system-ui,sans-serif}
-.tip{position:absolute;top:12px;right:12px;width:max-content;max-width:calc(100% - 24px);pointer-events:none;background:var(--ink);color:var(--bg);padding:6px 10px;border-radius:6px;font-size:.84rem;line-height:1.35;text-align:left;font-variant-numeric:tabular-nums;white-space:nowrap}
-.ar{display:flex;align-items:center;gap:6px}.ar input{width:70px}.ar span{font-size:1.3rem;padding-bottom:6px}
-label.chk{flex-direction:row;align-items:center;gap:8px;color:var(--ink);font-size:1rem;padding-bottom:10px}
+svg text{fill:var(--mute);font:12px "IBM Plex Sans",system-ui,sans-serif}
+.tip{display:flex;flex-wrap:wrap;gap:2px 24px;align-items:flex-start;min-height:calc(2.6em + 12px);margin:0 0 8px;background:var(--ink);color:var(--bg);padding:6px 12px;border-radius:6px;font-size:.84rem;line-height:1.3;font-variant-numeric:tabular-nums}
+.tip b{font-size:1.05rem}
+.ar{display:flex;align-items:center;gap:6px}.ar input{width:70px}.ar span{font-size:1.1rem;padding-bottom:8px}
+label.chk{flex-direction:row;align-items:center;gap:8px;color:var(--ink);font-size:1rem;padding-bottom:0}
 input[type=checkbox]{width:20px;height:20px;padding:0;accent-color:var(--il)}
-.legend{display:flex;gap:18px;flex-wrap:wrap;font-size:.85rem;color:var(--mute);margin:10px 2px 0}
+.legend{display:flex;gap:2px 18px;flex-wrap:wrap;font-size:.85rem;line-height:1.3;color:var(--mute);margin:6px 2px 0}
 .legend i{display:inline-block;width:18px;height:3px;vertical-align:middle;margin-right:6px}
 .tw{overflow-x:auto;margin-top:22px}
 table{border-collapse:collapse;width:100%;font-size:.92rem;background:var(--panel);border:1px solid var(--grid)}
@@ -44,7 +37,7 @@ td.ok{color:var(--hi);font-weight:600}td.no{color:var(--mute)}
 </head>
 <body>
 <main>
-<h1>What can your VGA monitor run?</h1>
+<h1>Resolution Graph</h1>
 <p class="sub">Enter the horizontal scan range from the monitor's spec sheet. The chart shows the refresh rate a CVT mode reaches at each vertical resolution.</p>
 <div class="ctl">
 <label>Min horizontal (kHz)<input id="lo" type="number" step="0.1" min="5" max="300" value="30"></label>
@@ -54,8 +47,9 @@ td.ok{color:var(--hi);font-weight:600}td.no{color:var(--mute)}
 <label>Aspect ratio<div class="ar"><input id="aw" type="number" step="1" min="1" value="4"><span>:</span><input id="ah" type="number" step="1" min="1" value="3"></div></label>
 <label class="chk"><input id="il" type="checkbox">Show interlaced</label>
 </div>
-<div class="chartbox"><div id="tip" class="tip">Tap the chart for details</div><svg id="c" viewBox="0 0 900 460" role="img" aria-label="Refresh rate versus vertical resolution"></svg></div>
-<div class="legend"><span><i style="background:var(--hi)"></i>At maximum kHz</span><span><i style="background:var(--lo)"></i>At minimum kHz</span><span id="ilg" style="display:none"><i style="background:var(--il)"></i>Interlaced at max kHz (field rate)</span><span>Shaded: refresh rates your monitor can sync to</span></div>
+<div id="tip" class="tip">Tap the chart for details</div>
+<div class="chartbox"><svg id="c" viewBox="0 0 900 460" role="img" aria-label="Refresh rate versus vertical resolution"></svg></div>
+<div class="legend"><span><i style="background:var(--lo)"></i>At minimum kHz</span><span><i style="background:var(--hi)"></i>At maximum kHz</span><span id="ilg" style="display:none"><i style="background:var(--il)"></i>Interlaced at max kHz (field rate)</span></div>
 <div class="tw"><table><thead><tr><th>Mode</th><th>Refresh range</th><th id="ith" style="display:none">Interlaced</th></tr></thead><tbody id="rows"></tbody></table></div>
 <p class="note">Uses the CVT standard-blanking timing: refresh = fH ÷ (lines + 3 + 0.00055 × fH), with fH in Hz and 550 µs of vertical sync and back porch. Interlaced modes and pixel-clock rounding are not modelled, so treat results as approximate. Made by a dummy using an LLM.</p>
 </main>
@@ -104,34 +98,52 @@ function draw(){
   s+=`<polyline points="${j(P0)}" fill="none" stroke="var(--lo)" stroke-width="2.5"/><polyline points="${j(P1)}" fill="none" stroke="var(--hi)" stroke-width="3"/>${IL?`<polyline points="${j(pts(b,rateI))}" fill="none" stroke="var(--il)" stroke-width="3" stroke-dasharray="8 5"/>`:''}</g>`;
   const pY=(fn,h)=>{const hv=fn(b,h),lv=fn(a,h);return hv<=v1?{v:hv}:(lv>=v0&&lv<=v1?{v:lv,min:1}:null)};
   const modes=modesFor(ar);
-  const placed=[];
-  const lab=(x,y,txt,st)=>{const w=txt.length*7+4;
-    for(const [dx,dy] of [[8,-8],[8,17],[8,-24],[8,32],[-w-8,-8],[-w-8,17]]){
-      const bx=x+dx,by=y+dy-11;
-      if(bx<m.l||bx+w>W-m.r||by<m.t||by+14>H-m.b)continue;
-      if(placed.some(p=>bx<p[0]+p[2]&&bx+w>p[0]&&by<p[1]+p[3]&&by+14>p[1]))continue;
-      placed.push([bx,by,w,14]);return `<text x="${bx}" y="${y+dy}" style="${st};font-weight:600">${txt}</text>`}
-    return ''};
+  const placed=[],pend=[];
   modes.forEach(([w,h])=>{if(h<X0||h>X1)return;const [lo,hi]=lim(h);if(lo>hi)return;const pv=pY(rate,h);if(pv==null)return;
-    const x=sx(h),y=sy(pv.v);
-    s+=`<circle cx="${x}" cy="${y}" r="4.5" fill="var(--panel)" stroke="${pv.min?'var(--lo)':'var(--hi)'}" stroke-width="2"/>${lab(x,y,`${w}×${h}`,'fill:var(--ink)')}`});
-  if(IL)modes.forEach(([w,h])=>{if(h<X0||h>X1)return;const [lo,hi]=limI(h);if(lo>hi)return;if(rateI(b,h)>v1)return;const pv={v:rateI(b,h)};
-    const x=sx(h),y=sy(pv.v);
-    s+=`<rect x="${x-4}" y="${y-4}" width="8" height="8" fill="var(--panel)" stroke="var(--il)" stroke-width="2"/>${lab(x,y,`${w}×${h}i`,'fill:var(--il)')}`});
+    const x=sx(h),y=sy(pv.v),col=pv.min?'var(--lo)':'var(--hi)';
+    s+=`<circle cx="${x}" cy="${y}" r="4.5" fill="var(--panel)" stroke="${col}" stroke-width="2"/>`;
+    placed.push([x-7,y-7,14,14]);pend.push({x,y,t:`${w}×${h}`,c:'var(--ink)'})});
+  if(IL)modes.forEach(([w,h])=>{if(h<X0||h>X1)return;const [lo,hi]=limI(h);if(lo>hi)return;if(rateI(b,h)>v1)return;
+    const x=sx(h),y=sy(rateI(b,h));
+    s+=`<rect x="${x-4}" y="${y-4}" width="8" height="8" fill="var(--panel)" stroke="var(--il)" stroke-width="2"/>`;
+    placed.push([x-7,y-7,14,14]);pend.push({x,y,t:`${w}×${h}i`,c:'var(--il)'})});
+  const L=pend.map(q=>({...q,w:q.t.length*7+4}));
+  const setSide=(q,sd)=>{q.side=sd;q.bx=Math.max(m.l+2,sd>0?q.x+8:q.x-8-q.w);q.icy=sd>0?q.y-12:q.y+12;q.cy=q.icy};
+  L.forEach(q=>setSide(q,(q.x+8+q.w>W-m.r)?-1:1));
+  const hov=(a,c)=>a.bx<c.bx+c.w&&c.bx<a.bx+a.w;
+  const reset=()=>L.forEach(q=>q.cy=q.icy);
+  const solve=()=>{for(let it=0;it<80;it++){
+    for(let i=0;i<L.length;i++){const a=L[i];
+      for(let k=i+1;k<L.length;k++){const c=L[k];
+        if(hov(a,c)){const d=a.cy-c.cy;if(Math.abs(d)<16){const dir=d===0?(a.icy<=c.icy?-1:1):Math.sign(d),pu=(16-Math.abs(d))/2+.01;a.cy+=dir*pu;c.cy-=dir*pu}}}
+      for(const o of pend){if(o.x===a.x&&o.y===a.y)continue;
+        if(a.bx<o.x+8&&o.x-8<a.bx+a.w){const d=a.cy-o.y;if(Math.abs(d)<15)a.cy+=(d>=0?1:-1)*(15-Math.abs(d))/2}}
+      a.cy+=(a.icy-a.cy)*.04;a.cy=Math.max(m.t+9,Math.min(H-m.b-9,a.cy))}}};
+  const cost=()=>{let t=0;L.forEach((q,i)=>{t+=Math.abs(q.cy-q.icy);for(let k=i+1;k<L.length;k++)if(hov(q,L[k])&&Math.abs(q.cy-L[k].cy)<13)t+=200});return t};
+  solve();let best=cost();
+  L.slice().sort((p,q)=>Math.abs(q.cy-q.icy)-Math.abs(p.cy-p.icy)).forEach(q=>{
+    if(Math.abs(q.cy-q.icy)<12)return;
+    const old=q.side;if(old<0&&q.x+8+q.w>W-m.r)return;
+    setSide(q,-old);reset();solve();const c=cost();
+    if(c<best)best=c;else setSide(q,old)});
+  reset();solve();
+  L.forEach(q=>{
+    if(Math.abs(q.cy-q.icy)>2)s+=`<line x1="${q.x}" y1="${q.y}" x2="${q.side>0?q.bx:q.bx+q.w}" y2="${q.cy}" stroke="${q.c}" stroke-width="1" opacity=".55"/>`;
+    s+=`<text x="${q.bx}" y="${q.cy+4}" style="fill:${q.c};font-weight:600;paint-order:stroke;stroke:var(--panel);stroke-width:3px;stroke-linejoin:round">${q.t}</text>`});
   s+=`<line id="vl" y1="${m.t}" y2="${H-m.b}" stroke="var(--mute)" stroke-dasharray="3 3" style="display:none"/><rect id="ov" x="${m.l}" y="${m.t}" width="${W-m.l-m.r}" height="${H-m.t-m.b}" fill="transparent"/>`;
   svg.innerHTML=s;
   const tip=$('tip'),ov=$('ov'),vl=$('vl');
   const show=L=>{const [lo,hi]=lim(L),w=Math.round(L*ar),[l2,h2]=limI(L),f=x=>x.toFixed(1),t=IL?' (p)':'';
     vl.setAttribute('x1',sx(L));vl.setAttribute('x2',sx(L));vl.style.display='';
-    let h=`<b>${w}×${L}</b>`;
-    h+=lo>hi?`<br>Out of range${t}`:`<br>${f(hi)} Hz max${t}<br>${f(lo)} Hz min${t}`;
-    if(IL)h+=l2>h2?'<br>Out of range (i)':`<br>${f(h2)} Hz max (i)<br>${f(l2)} Hz min (i)`;
+    let h=`<div><b>${w}×${L}</b></div>`;
+    h+=lo>hi?`<div>Out of range${t}</div>`:`<div>${f(hi)} Hz max${t}<br>${f(lo)} Hz min${t}</div>`;
+    if(IL)h+=l2>h2?'<div>Out of range (i)</div>':`<div>${f(h2)} Hz max (i)<br>${f(l2)} Hz min (i)</div>`;
     tip.innerHTML=h;
     last=L};
   const move=e=>{const r=svg.getBoundingClientRect(),px=(e.clientX-r.left)*W/r.width,
     L=Math.round(X0+(px-m.l)/(W-m.l-m.r)*(X1-X0));if(L>=X0&&L<=X1)show(L)};
   ov.addEventListener('pointermove',move);ov.addEventListener('pointerdown',move);
-  if(last&&last>=X0&&last<=X1)show(last);else tip.textContent='Tap the chart for details';
+  if(last&&last>=X0&&last<=X1)show(last);else tip.innerHTML='<div>Tap the chart for details</div>';
   $('rows').innerHTML=modes.map(([w,h])=>{const [lo,hi]=lim(h);
     const [l2,h2]=limI(h),ic=IL?(l2>h2?'<td class="no">Out of range</td>':`<td class="${h2>=60?'ok':'no'}">${l2.toFixed(0)}–${h2.toFixed(0)} Hz</td>`):'';
     return lo>hi?`<tr><td>${w}×${h}</td><td class="no">Out of range</td>${ic}</tr>`:

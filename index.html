@@ -9,18 +9,15 @@ This file is plainly marked as an altered, non-original version: it is not CRU.
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Timing Calculator</title>
+<link rel="stylesheet" href="shared.css">
 <style>
-:root{--bg:#f3f3f3;--fg:#1a1a1a;--mut:#777;--in:#fff;--ln:#c9c9c9;--ac:#0b62d6;--er:#c0392b;
-box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1e1f22;--fg:#e8e8e8;--mut:#8a8a8a;--in:#2b2d31;--ln:#45474d;--ac:#4c9aff;--er:#ff7b6b}}
-:root[data-theme="dark"]{--bg:#1e1f22;--fg:#e8e8e8;--mut:#8a8a8a;--in:#2b2d31;--ln:#45474d;--ac:#4c9aff;--er:#ff7b6b}
-html{scroll-padding-top:env(safe-area-inset-top,0px)}
-body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.3 "Segoe UI",system-ui,-apple-system,Roboto,sans-serif}
-main{max-width:460px;margin:0 auto;padding:12px}
-fieldset{border:1px solid var(--ln);border-radius:4px;margin:10px 0;padding:6px 10px 10px}
-legend{padding:0 4px}
+:root{--fg:var(--ink);--mut:var(--muted);--in:var(--bg);--ln:var(--line);--ac:var(--accent);--er:#c0392b}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--er:#ff7b6b}}
+:root[data-theme="dark"]{--er:#ff7b6b}
+main>:not(h1):not(.sub){max-width:520px}
+fieldset{border:1px solid var(--line);border-radius:6px;background:var(--panel);margin:12px 0;padding:10px 14px 14px}
+legend{padding:0 6px;font-size:13px;color:var(--muted)}
 .top{display:flex;gap:8px;align-items:center}
-select,input[type=text]{font:inherit;color:var(--fg);background:var(--in);border:1px solid var(--ln);border-radius:3px;padding:7px 8px;min-width:0}
 select{flex:1}
 input:read-only{background:transparent;color:var(--mut)}
 input:focus,select:focus{outline:2px solid var(--ac);outline-offset:-1px}
@@ -38,6 +35,8 @@ input[type=radio]{accent-color:var(--ac);width:18px;height:18px;margin:0}
 .row label{display:flex;align-items:center;gap:8px}input[type=checkbox]{accent-color:var(--ac);width:18px;height:18px;margin:0}
 .row{display:flex;gap:8px;align-items:center;justify-content:space-between}
 </style></head><body><main>
+<h1>Timing Calculator</h1>
+<p class="sub">Calculate exact video timings, including blanking, sync and porch values, for a display mode. Port of the timing math in CRU.</p>
 <div class="top"><span>Timing:</span><select id="mode"></select></div>
 <fieldset><legend>Parameters</legend>
 <div class="g" id="grid"><span></span><b>Horizontal</b><b>Vertical</b></div>

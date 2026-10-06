@@ -1,0 +1,21 @@
+/* Shared design for all Video-Timing-Calculator tools: colors, fonts, base layout.
+   Each page links this file, then adds only its own page-specific CSS. */
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap");
+:root{color-scheme:light dark;--bg:#eceff3;--panel:#fff;--ink:#1a2230;--muted:#5b6678;--line:#d3d9e2;--accent:#2a56c6;--hero:#e7edfb;--warn:#fff4d6;--warnink:#5c4600;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12161d;--panel:#1b212b;--ink:#e6eaf0;--muted:#98a3b5;--line:#2e3644;--accent:#8aabff;--hero:#1f2b49;--warn:#2d2711;--warnink:#e8d48a}}
+:root[data-theme="light"]{color-scheme:light}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#12161d;--panel:#1b212b;--ink:#e6eaf0;--muted:#98a3b5;--line:#2e3644;--accent:#8aabff;--hero:#1f2b49;--warn:#2d2711;--warnink:#e8d48a}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 15px/1.5 "IBM Plex Sans",system-ui,sans-serif}
+main{max-width:980px;margin:0 auto;padding:28px 20px 48px}
+h1{font-size:36px;line-height:1.15;font-weight:600;margin:0 0 12px;letter-spacing:-.02em}
+.sub{color:var(--muted);margin:0 0 24px;max-width:62ch}
+section{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:18px}
+label,.lbl{display:block;font-size:13px;color:var(--muted);margin:0 0 4px}
+input[type=number],input[type=text],select{width:100%;font:inherit;font-family:"IBM Plex Mono",ui-monospace,monospace;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:8px 10px;min-width:0}
+select{font-family:inherit}
+input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+a{color:var(--accent)}
+@media (max-width:760px){main{padding:10px 10px 28px}h1{font-size:24px;margin:0 0 14px}.sub{display:none}}

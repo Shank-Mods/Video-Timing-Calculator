@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CRT Mask Resolution Calculator</title>
+<link rel="stylesheet" href="../shared.css">
+<style>
+.grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:20px;align-items:start}
+h2{font-size:15px;font-weight:600;margin:0 0 14px}
+.fields{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px 10px}
+.full{grid-column:1/-1}
+.row{display:flex;gap:8px}.row>*{flex:1;min-width:0}
+.row>.ico{flex:0 0 48px;width:48px;height:38px;border-radius:4px;background:#0e1117;border:1px solid var(--line)}
+.vrow{display:flex;gap:10px;align-items:flex-end}.vrow>*{flex:1;min-width:0}
+.check{display:flex;gap:8px;align-items:center;height:38px;color:var(--ink);font-size:14px;margin:0}
+.check input{width:16px;height:16px;accent-color:var(--accent)}
+.helprow{position:relative;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.helpbtn{width:22px;height:22px;padding:0;border-radius:50%;border:1px solid var(--line);background:var(--bg);color:var(--accent);font:600 13px/1 "IBM Plex Sans",system-ui,sans-serif;cursor:help}
+.helpbtn:hover,.helpbtn[aria-expanded=true]{border-color:var(--accent)}
+.helpbtn:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.vcell{align-self:stretch;margin-top:-14px;display:flex;flex-direction:column;justify-content:space-between}
+.vcell .check{height:30px;margin-top:14px}
+.pop{position:absolute;left:0;bottom:100%;z-index:20;width:max-content;max-width:min(320px,calc(100vw - 64px));margin-bottom:6px;padding:10px 12px;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,.25);font-size:12.5px;line-height:1.45}
+.pop[hidden]{display:none}
+.pop p{margin:0 0 6px}.pop p:last-child{margin:0}
+.hint{font-size:12px;color:var(--muted);margin:4px 0 0}
+.hide{display:none!important}
+.ghost{visibility:hidden}
+.hero{background:var(--hero);border:2px solid var(--accent);border-radius:8px;padding:14px 16px;margin-bottom:12px}
+.hl{font-size:14px;font-weight:600;margin-bottom:6px}
+.hcells{display:flex}
+.hc{flex:1;font-family:"IBM Plex Mono",ui-monospace,monospace;font-weight:600;font-size:28px;line-height:1.2;color:var(--accent);white-space:nowrap}
+.hc+.hc{border-left:1px solid var(--accent);padding-left:14px}
+.hc em{display:block;font:500 11px "IBM Plex Sans",system-ui,sans-serif;color:var(--muted)}
+.ast{display:inline-block;width:.34em;height:.34em;margin-left:.1em;vertical-align:.4em;fill:none;stroke:currentColor;stroke-width:1.5}
+.hn{font-size:12px;line-height:1.35;color:var(--muted);margin:8px 0 0}
+.hero{container-type:inline-size}
+.hero.multi .hc{font-size:clamp(13px,calc(6cqw - 3px),22px)}
+.hero.multi .hc{padding-right:12px}
+.x{margin:0 .14em;opacity:.75}
+.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl th,.tbl td{padding:8px 4px;border-bottom:1px solid var(--line)}
+.tbl tr:last-child>*{border-bottom:0}
+.tbl th{text-align:left;font-weight:500}
+.tbl thead th{color:var(--muted);font-size:12px;text-align:right}
+.tbl td{padding-left:12px;text-align:right;font-family:"IBM Plex Mono",ui-monospace,monospace;white-space:nowrap}
+.note{background:var(--warn);color:var(--warnink);border-radius:6px;padding:12px 14px;font-size:13px;margin-top:20px}
+.note ul{margin:6px 0 0;padding-left:18px}
+.err{color:#c0392b;font-size:13px}
+@media (max-width:760px){
+ .grid{grid-template-columns:minmax(0,1fr);gap:10px}
+ main{padding:10px 10px 28px}
+ .sub,.hint,h2{display:none}
+ section{padding:12px}
+ .fields{gap:10px 8px}
+ .hero{padding:10px 12px;margin-bottom:6px}
+ .hl{margin-bottom:2px;font-size:13px}
+ .hc{font-size:26px}
+ .hc+.hc{padding-left:10px}
+ .tbl{font-size:13px}.tbl th,.tbl td{padding:6px 2px}.tbl td{padding-left:8px}
+ .note{margin-top:10px}
+ .hn{font-size:10px}
+}
+</style>
+</head>
+<body>
+<main>
+<h1>CRT Mask Resolution Calculator</h1>
+<p class="sub">Estimate the most detail a CRT's shadow mask or aperture grille can physically represent, ignoring focus, spot size, convergence and video bandwidth.</p>
+
+<div class="grid">
+<section aria-labelledby="in">
+<h2 id="in">Tube</h2>
+<div class="fields" id="fields">
+
+<div>
+<label for="diag">Viewable diagonal</label>
+<div class="row">
+<input enterkeyhint="next" id="diag" type="number" min="1" step="any" value="19" inputmode="decimal">
+<select id="unit" aria-label="Diagonal unit"><option value="in">in</option><option value="mm">mm</option></select>
+</div>
+</div>
+
+<div>
+<label for="ar">Aspect ratio</label>
+<select id="ar">
+<option value="4:3" selected>4:3</option><option value="5:4">5:4</option><option value="16:10">16:10</option><option value="16:9">16:9</option><option value="3:2">3:2</option><option value="custom">Custom…</option>
+</select>
+</div>
+
+<div class="full row hide" id="arc">
+<input enterkeyhint="next" id="aw" type="number" min="0.1" step="any" value="4" aria-label="Aspect width">
+<input enterkeyhint="next" id="ah" type="number" min="0.1" step="any" value="3" aria-label="Aspect height">
+</div>
+
+<div class="full">
+<label for="mask">Mask type</label>
+<div class="row">
+<select id="mask" aria-label="Mask type">
+<option value="grille">Aperture Grille</option>
+<option value="shadow" selected>Shadow Mask - Dot Triad</option>
+<option value="slot">Shadow Mask - Slot Mask</option>
+</select>
+<svg class="ico" id="maskIcon" viewBox="0 0 48 38" aria-hidden="true"></svg>
+</div>
+</div>
+
+<div class="full" id="shadowMode">
+<label for="smode">Shadow mask pitch measured as</label>
+<select id="smode">
+<option value="diag" selected>Diagonal Dot Pitch (Standard)</option>
+<option value="horiz">Horizontal Dot Pitch</option>
+<option value="hv">Horizontal + Vertical Pitch</option>
+</select>
+</div>
+
+<div>
+<label for="pitch" id="pitchLabel">Dot pitch (mm)</label>
+<input enterkeyhint="next" id="pitch" type="number" min="0.01" step="0.001" value="0.25" inputmode="decimal">
+</div>
+
+<div id="vwrap" class="hide">
+<label for="vpitch" id="vpLabel">Vertical pitch (mm)</label>
+<input enterkeyhint="next" id="vpitch" type="number" min="0" step="0.001" value="" inputmode="decimal">
+</div>
+
+<div class="full vrow" id="vrow">
+<div class="vcell"><label class="check"><input enterkeyhint="next" id="var" type="checkbox"> Variable pitch</label>
+<div class="helprow">
+<button type="button" id="helpBtn" class="helpbtn" aria-expanded="false" aria-controls="helpPop" aria-label="Pitch details">?</button>
+<span>Pitch details</span>
+<div id="helpPop" class="pop" role="tooltip" hidden></div>
+</div></div>
+<div id="spacer" class="ghost hide" aria-hidden="true"><label>&nbsp;</label><input type="number" disabled tabindex="-1"></div>
+<div id="edgeWrap" class="hide">
+<label for="edge">Edge pitch (mm)</label>
+<input enterkeyhint="next" id="edge" type="number" min="0.01" step="0.001" value="0.28" inputmode="decimal">
+</div>
+</div>
+
+</div>
+</section>
+
+<section id="outSec" aria-label="Results">
+<h2>Theoretical ceiling</h2>
+<div id="results"></div>
+</section>
+</div>
+
+<div class="note">
+<strong>Read this as a comparison tool, not a spec.</strong>
+<ul>
+<li>These are upper bounds from mask geometry alone. Real monitors resolve less, depending on focus, spot size, convergence, bandwidth and how closely the image fills the viewable area.</li>
+<li>Pitch is usually quoted at screen center and gets coarser toward the edges. Variable pitch scales every pitch value by edge ÷ center for the Edge column.</li>
+<li>Near the limit, pixels beat against the mask and cause moiré, so detail is softer than the ceiling suggests.</li>
+<li>Aperture grille stripes run the full height of the screen, so the mask does not limit vertical resolution. That is set by scan lines, spot size and video timing, which this calculator does not model. TVL is the square-pixel vertical equivalent for reference.</li>
+<li>Slot masks assume a 1:1 ratio of vertical to horizontal slot pitch. Real tubes vary, with vertical pitch typically in the 0.2–0.5 mm range.</li>
+<li>Horizontal sampling for shadow masks uses the horizontal dot pitch convention, which is how shadow-mask and grille pitches are usually compared. Vertical sampling uses the row spacing (half the diagonal pitch on a typical delta mask).</li>
+</ul>
+</div>
+<p style="color:var(--muted);font-size:12px;margin:14px 2px 0">Made by a dummy using an LLM.</p>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const fmt = (v, d=0) => Number.isFinite(v) ? v.toLocaleString("en-US",{maximumFractionDigits:d,minimumFractionDigits:d}) : "–";
+const SHADOW_H = Math.sqrt(3)/2, SHADOW_V = 0.5;
+const R="#e23b3b",G="#2fb34a",B="#2f5fe0";
+const ICONS={
+ grille:`<rect x="10" y="5" width="8" height="28" fill="${R}"/><rect x="20" y="5" width="8" height="28" fill="${G}"/><rect x="30" y="5" width="8" height="28" fill="${B}"/>`,
+ slot:`<rect x="10" y="5" width="8" height="28" rx="4" fill="${R}"/><rect x="20" y="5" width="8" height="28" rx="4" fill="${G}"/><rect x="30" y="5" width="8" height="28" rx="4" fill="${B}"/>`,
+ shadow:`<circle cx="16.5" cy="11.5" r="6.5" fill="${R}"/><circle cx="31.5" cy="11.5" r="6.5" fill="${G}"/><circle cx="24" cy="26.5" r="6.5" fill="${B}"/>`
+};
+
+function aspect(){
+  if ($("ar").value === "custom") return [parseFloat($("aw").value), parseFloat($("ah").value)];
+  return $("ar").value.split(":").map(Number);
+}
+
+function setLabels(){
+  $("maskIcon").innerHTML = ICONS[$("mask").value];
+  const m = $("mask").value, s = $("smode").value;
+  $("shadowMode").classList.toggle("hide", m !== "shadow");
+  const vw = $("vwrap");
+  let label = "Stripe pitch (mm)", hint = "Horizontal distance between same-color stripes.";
+  vw.classList.add("hide");
+  if (m === "slot"){
+    label = "Slot pitch (mm)"; hint = "Horizontal distance between same-color slots. Vertical pitch is assumed equal to horizontal (1:1).";
+  } else if (m === "shadow"){
+    if (s === "diag"){ label = "Diagonal pitch (mm)"; hint = "Distance between nearest same-color dots. Assumes a typical delta layout (horizontal = 0.866×, row spacing = 0.5×)."; }
+    if (s === "horiz"){ label = "Horizontal pitch (mm)"; hint = "Row spacing is assumed to be 0.577× this value (same geometry as a typical delta mask)."; }
+    if (s === "hv"){
+      label = "Horizontal pitch (mm)"; hint = "Horizontal component of the dot spacing between adjacent rows.";
+      vw.classList.remove("hide");
+      $("vpLabel").textContent = "Vertical pitch (mm)";
+    }
+  }
+  $("pitchLabel").textContent = label;
+  const help = [`<b>${label.replace(" (mm)","")}:</b> ${hint}`];
+  if (m === "shadow" && s === "hv") help.push("<b>Vertical pitch:</b> Distance between adjacent dot rows.");
+  help.push("<b>Variable pitch:</b> Pitch usually gets coarser toward the screen edges. Enable this to enter an edge pitch.");
+  $("helpPop").innerHTML = help.map(x => `<p>${x}</p>`).join("");
+}
+
+function pitches(scale){
+  const m = $("mask").value, s = $("smode").value;
+  const p = parseFloat($("pitch").value) * scale;
+  const vp = parseFloat($("vpitch").value) * scale;
+  if (m === "grille") return {ph:p, pv:null};
+  if (m === "slot")   return {ph:p, pv:p};
+  if (s === "diag")   return {ph:p*SHADOW_H, pv:p*SHADOW_V};
+  if (s === "horiz")  return {ph:p, pv:p*SHADOW_V/SHADOW_H};
+  return {ph:p, pv: vp > 0 ? vp : null};
+}
+
+function calc(scale, W, H, ar){
+  const {ph, pv} = pitches(scale);
+  const hTri = W/ph, vRows = pv ? H/pv : Infinity;
+  const hres = Math.floor(Math.min(hTri, vRows*ar));
+  return {hTri, vRows, tvl:H/ph, hres, vres:Math.round(hres/ar)};
+}
+
+function render(){
+  setLabels();
+  const ew = $("edgeWrap"), wantRow = !$("vwrap").classList.contains("hide");
+  if (wantRow && ew.parentNode !== $("vrow")) $("vrow").appendChild(ew);
+  else if (!wantRow && ew.parentNode !== $("fields")) $("vwrap").after(ew);
+  const on = $("var").checked, inRow = ew.parentNode === $("vrow");
+  ew.classList.toggle("hide", !on && !inRow);
+  ew.classList.toggle("ghost", !on && inRow);
+  $("spacer").classList.toggle("hide", !($("mask").value === "shadow" && !inRow));
+  $("arc").classList.toggle("hide", $("ar").value !== "custom");
+  const [a,b] = aspect(), d = parseFloat($("diag").value), p = parseFloat($("pitch").value);
+  if (!(a>0 && b>0 && d>0 && p>0)){ $("results").innerHTML = '<p class="err">Enter a positive diagonal, aspect ratio and pitch.</p>'; return; }
+  const dmm = $("unit").value === "in" ? d*25.4 : d;
+  const k = dmm/Math.hypot(a,b), W = a*k, H = b*k, ar = a/b;
+  const useEdge = $("var").checked && parseFloat($("edge").value) > 0;
+  const cols = [{name:"Center", r:calc(1,W,H,ar)}];
+  if (useEdge) cols.push({name:"Edge", r:calc(parseFloat($("edge").value)/p,W,H,ar)});
+  const multi = cols.length > 1;
+
+  const hero = `<div class="hero ${multi?"multi":""}"><div class="hl">Max Addressable Grid</div><div class="hcells">${cols.map(c=>`<div class="hc">${multi?`<em>${c.name}</em>`:""}${fmt(c.r.hres)}<span class="x">×</span>${c.r.vRows===Infinity ? `${fmt(c.r.vres)}<svg class="ast" viewBox="0 0 10 10" aria-hidden="true"><path d="M5 .6V9.4M1.2 2.8L8.8 7.2M1.2 7.2L8.8 2.8"/></svg>` : fmt(c.r.vres)}</div>`).join("")}</div></div>`;
+  const tr = (l,f) => `<tr><th scope="row">${l}</th>${cols.map(c=>`<td>${f(c.r)}</td>`).join("")}</tr>`;
+  const head = multi ? `<thead><tr><th></th>${cols.map(c=>`<th>${c.name}</th>`).join("")}</tr></thead>` : "";
+  $("results").innerHTML = hero +
+    `<table class="tbl">${head}<tbody>` +
+    tr("Horizontal Triads (LoHR)", r=>fmt(Math.floor(r.hTri))) +
+    tr("Vertical Triads", r=>r.vRows===Infinity ? "no limit" : fmt(Math.floor(r.vRows))) +
+    tr("TVL", r=>fmt(Math.floor(r.tvl))) +
+    `</tbody></table>` +
+    (cols.some(c=>c.r.vRows===Infinity) ? `<p class="hn">*Aperture grilles do not limit vertical resolution. This number is the square-pixel equivalent, the same as TVL.</p>` : "") +
+    `<p class="hint" style="margin-top:8px">Viewable area: ${fmt(W,1)} × ${fmt(H,1)} mm (${fmt(W/25.4,2)} × ${fmt(H/25.4,2)} in). The grid ceiling is limited by the smaller of horizontal and vertical mask sampling.</p>`;
+}
+
+document.querySelectorAll("input,select").forEach(e => e.addEventListener("input", render));
+render();
+
+const hb = $("helpBtn"), hp = $("helpPop"); let pinned = false;
+const showHelp = o => { hp.hidden = !o; hb.setAttribute("aria-expanded", o ? "true" : "false"); };
+hb.addEventListener("mouseenter", () => showHelp(true));
+hb.addEventListener("mouseleave", () => { if (!pinned) showHelp(false); });
+hb.addEventListener("focus", () => showHelp(true));
+hb.addEventListener("blur", () => { if (!pinned) showHelp(false); });
+hb.addEventListener("click", e => { e.stopPropagation(); pinned = !pinned; showHelp(pinned); });
+document.addEventListener("click", () => { pinned = false; showHelp(false); });
+document.addEventListener("keydown", e => { if (e.key === "Escape") { pinned = false; showHelp(false); } });
+const fieldList = () => [...document.querySelectorAll(".fields input, .fields select")].filter(e => e.offsetParent !== null && !e.closest(".ghost"));
+document.querySelectorAll(".fields input").forEach(e => {
+  if (e.type === "number"){
+    let fresh = false;
+    e.addEventListener("focus", () => { fresh = true; setTimeout(() => e.select(), 0); });
+    e.addEventListener("mouseup", ev => {
+      const onSpinner = ev.clientX > e.getBoundingClientRect().right - 28;
+      if (fresh && !onSpinner) ev.preventDefault();
+      fresh = false;
+    });
+  }
+  e.addEventListener("keydown", ev => {
+    if (ev.key !== "Enter") return;
+    ev.preventDefault();
+    const list = fieldList(), i = list.indexOf(e);
+    if (i >= 0 && i < list.length - 1) list[i+1].focus(); else e.blur();
+  });
+});
+</script>
+<script src="../tools.js"></script>
+</body>
+</html>
