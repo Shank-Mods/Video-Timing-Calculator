@@ -21,7 +21,8 @@ svg{display:block;width:100%;height:auto}
 svg text{fill:var(--mute);font:12px "IBM Plex Sans",system-ui,sans-serif}
 .tip{display:flex;flex-wrap:wrap;gap:2px 24px;align-items:flex-start;min-height:calc(2.6em + 12px);margin:0 0 8px;background:var(--ink);color:var(--bg);padding:6px 12px;border-radius:6px;font-size:.84rem;line-height:1.3;font-variant-numeric:tabular-nums}
 .tip b{font-size:1.05rem}
-.ar{display:flex;align-items:center;gap:6px}.ar input{width:70px}.ar span{font-size:1.1rem;padding-bottom:8px}
+.pair{display:flex;gap:14px 18px}
+.ar{display:flex;align-items:center;gap:6px}.ar input{width:54px}.ar span{font-size:1.1rem;padding-bottom:8px}
 label.chk{flex-direction:row;align-items:center;gap:8px;color:var(--ink);font-size:1rem;padding-bottom:0}
 input[type=checkbox]{width:20px;height:20px;padding:0;accent-color:var(--il)}
 .legend{display:flex;gap:2px 18px;flex-wrap:wrap;font-size:.85rem;line-height:1.3;color:var(--mute);margin:6px 2px 0}
@@ -40,10 +41,14 @@ td.ok{color:var(--hi);font-weight:600}td.no{color:var(--mute)}
 <h1>Resolution Graph</h1>
 <p class="sub">Enter the horizontal scan range from the monitor's spec sheet. The chart shows the refresh rate a CVT mode reaches at each vertical resolution.</p>
 <div class="ctl">
+<div class="pair">
 <label>Min horizontal (kHz)<input id="lo" type="number" step="0.1" min="5" max="300" value="30"></label>
 <label>Max horizontal (kHz)<input id="hi" type="number" step="0.1" min="5" max="300" value="64"></label>
+</div>
+<div class="pair">
 <label>Min vertical (Hz)<input id="vlo" type="number" step="1" min="10" max="400" value="60"></label>
 <label>Max vertical (Hz)<input id="vhi" type="number" step="1" min="10" max="400" value="160"></label>
+</div>
 <label>Aspect ratio<div class="ar"><input id="aw" type="number" step="1" min="1" value="4"><span>:</span><input id="ah" type="number" step="1" min="1" value="3"></div></label>
 <label class="chk"><input id="il" type="checkbox">Show interlaced</label>
 </div>
@@ -151,9 +156,7 @@ function draw(){
 }
 const ids=['lo','hi','vlo','vhi','aw','ah'];
 ids.forEach((id,k)=>{const el=$(id);el.oninput=draw;
-  el.addEventListener('focus',()=>setTimeout(()=>el.select(),0));el.addEventListener('mouseup',e=>e.preventDefault());
-  el.addEventListener('keydown',e=>{if(e.key!=='Enter')return;e.preventDefault();
-    const nx=$(ids[k+1]);if(nx){nx.focus();nx.select()}else el.blur()})});
+  el.addEventListener('focus',()=>setTimeout(()=>el.select(),0));el.addEventListener('mouseup',e=>e.preventDefault());});
 $('il').onchange=draw;draw();
 </script>
 <script src="../tools.js"></script>

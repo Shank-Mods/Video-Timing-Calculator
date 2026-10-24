@@ -6,12 +6,36 @@
   var TOOLS = [
     { name: "Timing Calculator", path: "" },
     { name: "Resolution Graph", path: "resolution-graph/" },
-    { name: "CRT Mask Calculator", path: "crt-mask-calculator/" }
+    { name: "CRT Mask Calculator", path: "crt-mask-calculator/" },
+    { name: "Resolution Compare", path: "resolution-compare/" }
   ];
+
+  // Enter moves to the next field (text boxes, numbers, checkboxes and dropdowns) on every tool
+  var FIELDS = "input:not([type=hidden]):not([type=radio]):not([type=button]):not([type=submit]),select";
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "Enter" || e.isComposing || e.shiftKey || e.ctrlKey || e.altKey || e.metaKey) return;
+    var el = e.target;
+    if (!el || !el.matches || !el.matches(FIELDS)) return;
+    var list = Array.prototype.filter.call(document.querySelectorAll(FIELDS), function (f) {
+      return !f.disabled && !f.readOnly && f.tabIndex >= 0 && f.offsetParent !== null && getComputedStyle(f).visibility !== "hidden";
+    });
+    var i = list.indexOf(el);
+    if (i < 0) return;
+    e.preventDefault();
+    var nx = list[i + 1];
+    if (nx) { nx.focus(); if (/^(text|number)$/.test(nx.type)) nx.select(); } else el.blur();
+  });
 
   // Saved light/dark choice (falls back to the system setting when nothing is saved)
   var KEY = "vtc-theme", root = document.documentElement;
   try { var sv = localStorage.getItem(KEY); if (sv === "light" || sv === "dark") root.setAttribute("data-theme", sv); } catch (e) {}
+  // A theme passed in the link (#theme=dark) wins, so the choice also follows you when storage is not shared
+  var hm = /[#&]theme=(light|dark)/.exec(location.hash);
+  if (hm) {
+    root.setAttribute("data-theme", hm[1]);
+    try { localStorage.setItem(KEY, hm[1]); } catch (e) {}
+    try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
+  }
   var effective = function () {
     return root.getAttribute("data-theme") || (window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
   };
@@ -74,11 +98,17 @@
     var url = new URL(t.path, base);
     var a = document.createElement("a");
     a.href = url.href;
+    a.dataset.base = url.href;
     a.textContent = t.name;
     if (norm(url.pathname) === here) a.setAttribute("aria-current", "page");
     menu.appendChild(a);
   });
   wrap.appendChild(menu);
+  var syncLinks = function () {
+    var t = root.getAttribute("data-theme");
+    Array.prototype.forEach.call(menu.querySelectorAll("a"), function (a) { a.href = a.dataset.base + (t ? "#theme=" + t : ""); });
+  };
+  syncLinks();
 
   var SUN = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
   var MOON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>';
@@ -95,6 +125,7 @@
     var next = effective() === "dark" ? "light" : "dark";
     root.setAttribute("data-theme", next);
     try { localStorage.setItem(KEY, next); } catch (e) {}
+    syncLinks();
     paint();
   });
   paint();

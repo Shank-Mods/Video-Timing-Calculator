@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<!-- Resolution Compare: part of Video-Timing-Calculator (https://github.com/Shank-Mods/Video-Timing-Calculator).
+     Original code, not derived from CRU. Distributed under the repository license. No warranty. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Resolution Compare</title>
+<link rel="stylesheet" href="../shared.css">
+<style>
+:root{--ca:var(--accent);--cb:#c2571a}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--cb:#f08c4d}}
+:root[data-theme="dark"]{--cb:#f08c4d}
+main>section+section{margin-top:14px}
+h2{font-size:15px;font-weight:600;margin:0 0 12px}
+.ins{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px 20px}
+.rr{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.rr span{color:var(--muted)}
+input[type=number]{-moz-appearance:textfield;appearance:textfield}
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.chip{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.chip.a{background:var(--ca)}.chip.b{background:var(--cb)}
+svg{display:block;width:100%;height:auto}
+svg text{font:600 12px "IBM Plex Sans",system-ui,sans-serif;paint-order:stroke;stroke:var(--panel);stroke-width:3px;stroke-linejoin:round}
+.leg{display:flex;flex-wrap:wrap;gap:4px 18px;margin-top:10px;font-size:13px;color:var(--muted)}
+.hero{background:var(--hero);border:2px solid var(--accent);border-radius:8px;padding:12px 16px;margin-bottom:14px}
+.hero b{display:block;font-size:34px;line-height:1.15;color:var(--accent)}
+.hero span{font-size:13px;color:var(--muted)}
+.op{font-style:normal;margin:0 .9em}
+.tbl{width:100%;border-collapse:collapse;font-size:14px;margin:0 0 16px}
+.tbl th,.tbl td{padding:7px 4px;border-bottom:1px solid var(--line);text-align:right;vertical-align:top}
+.tbl th:first-child,.tbl td:first-child{text-align:left}
+.tbl thead th{color:var(--muted);font-size:12px;font-weight:500}
+.tbl td{font-family:"IBM Plex Mono",ui-monospace,monospace}
+.tbl tr:last-child>*{border-bottom:0}
+.pc{display:block;font-size:12px;color:var(--muted)}
+.h3{font-size:13px;font-weight:600;margin:0 0 4px}
+.fine{font-size:12px;color:var(--muted);margin:0}
+.err{color:#c0392b}
+@media (max-width:760px){.tbl{font-size:13px}.hero b{font-size:28px}}
+</style>
+</head>
+<body>
+<main>
+<h1>Resolution Compare</h1>
+<p class="sub">Enter two resolutions to see them drawn to scale from a shared corner, with pixel counts and how they differ.</p>
+
+<section aria-label="Resolutions">
+<div class="ins">
+<div>
+<label><i class="chip a"></i>First resolution</label>
+<div class="rr"><input id="aw" type="number" min="1" step="1" value="1920" inputmode="numeric" aria-label="First width"><span>×</span><input id="ah" type="number" min="1" step="1" value="1080" inputmode="numeric" aria-label="First height"></div>
+</div>
+<div>
+<label><i class="chip b"></i>Second resolution</label>
+<div class="rr"><input id="bw" type="number" min="1" step="1" value="2560" inputmode="numeric" aria-label="Second width"><span>×</span><input id="bh" type="number" min="1" step="1" value="1440" inputmode="numeric" aria-label="Second height"></div>
+</div>
+</div>
+</section>
+
+<section aria-label="Size comparison"><svg id="svg" role="img" aria-label="The two resolutions drawn to scale"></svg><div class="leg" id="leg"></div></section>
+
+<section aria-label="Comparison data"><div id="out"></div></section>
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+const nf=n=>Math.round(n).toLocaleString('en-US');
+const sg=n=>(n>0?'+':n<0?'−':'')+nf(Math.abs(n));
+const pct=(r,d=1)=>{const v=(r-1)*100;return (v>0?'+':v<0?'−':'')+Math.abs(v).toFixed(Math.abs(v)>=1000?0:d)+'%'};
+const gcd=(a,b)=>b?gcd(b,a%b):a;
+const COMMON=[[4,3],[5,4],[16,9],[16,10],[3,2],[64,27],[32,9],[1,1]];
+function ratio(w,h){const g=gcd(w,h),a=w/g,b=h/g,d=(w/h).toFixed(2);
+ if(a<=32&&b<=32)return `${a}:${b} (${d})`;
+ const m=COMMON.find(([x,y])=>Math.abs(w/h-x/y)/(x/y)<.006);return m?`≈${m[0]}:${m[1]} (${d})`:`${d}:1`}
+const val=id=>{const n=parseInt($(id).value,10);return n>=1&&n<=100000?n:NaN};
+function draw(A,B){
+ const W=900,pad=12,sc=Math.min((W-2*pad)/Math.max(A.w,B.w),436/Math.max(A.h,B.h)),H=Math.max(120,Math.ceil(Math.max(A.h,B.h)*sc)+2*pad);
+ const R=o=>({x:pad,y:pad,w:o.w*sc,h:o.h*sc});
+ const items=[[A,'A','var(--ca)'],[B,'B','var(--cb)']].sort((p,q)=>q[0].w*q[0].h-p[0].w*p[0].h);
+ let s='',placed=[];
+ items.forEach(([o,n,c],i)=>{const r=R(o);
+  s+=`<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" fill="${c}" fill-opacity="${i?0.3:0.2}" stroke="${c}" stroke-width="2"/>`});
+ s+=`<circle cx="${pad}" cy="${pad}" r="3.5" fill="var(--ink)"/>`;
+ items.forEach(([o,n,c])=>{const r=R(o),t=`${o.w}×${o.h}`,tw=t.length*7.2,small=r.w<tw+20||r.h<30;
+  let x=small?r.x+r.w+8:r.x+r.w-8,y=small?r.y+16:r.y+r.h-9,an=small?'start':'end';
+  for(let k=0;k<4;k++){const bx=an==='end'?x-tw:x;
+   if(placed.some(p=>bx<p[0]+p[2]&&bx+tw>p[0]&&Math.abs(y-p[1])<16))y+=small?18:-18;else break}
+  placed.push([an==='end'?x-tw:x,y,tw]);
+  s+=`<text x="${x}" y="${y}" text-anchor="${an}" style="fill:${c}">${t}</text>`});
+ $('svg').setAttribute('viewBox',`0 0 ${W} ${H}`);$('svg').innerHTML=s;
+}
+function row(l,a,b,d,p){return `<tr><th scope="row" style="font-weight:500;font-family:inherit">${l}</th><td>${a}</td><td>${b}</td><td>${d}${p?`<span class="pc">${p}</span>`:''}</td></tr>`}
+function render(){
+ const A={w:val('aw'),h:val('ah')},B={w:val('bw'),h:val('bh')};
+ if(![A.w,A.h,B.w,B.h].every(Number.isFinite)){$('svg').innerHTML='';$('leg').innerHTML='';$('out').innerHTML='<p class="err">Enter whole-number widths and heights between 1 and 100,000.</p>';return}
+ A.px=A.w*A.h;B.px=B.w*B.h;draw(A,B);
+ $('leg').innerHTML=`<span><i class="chip a"></i>${nf(A.w)} × ${nf(A.h)}</span><span><i class="chip b"></i>${nf(B.w)} × ${nf(B.h)}</span>`;
+ const nA=`${A.w}×${A.h}`,nB=`${B.w}×${B.h}`,r=B.px/A.px,same=B.px===A.px,big=r>=1?[nB,nA]:[nA,nB],m=Math.max(r,1/r);
+ const mult=m>=100?nf(m):String(Number(m.toFixed(2)));
+ const sp=t=>t.replace('×',' × '),cmp=same?'=':'&gt;';
+ const fit=(p,q)=>{const f=Math.min(q.w/p.w,q.h/p.h),n=Math.floor(f+1e-9),lim=q.w/p.w<=q.h/p.h?'width':'height';
+  return `<tr><th scope="row" style="font-weight:500;font-family:inherit">${p===A?nA+' into '+nB:nB+' into '+nA}</th><td>${f.toFixed(3)}×<span class="pc">limited by ${lim}</span></td><td>${n>=1?`${n}× → ${nf(p.w*n)}×${nf(p.h*n)}<span class="pc">${nf(q.w-p.w*n)} × ${nf(q.h-p.h*n)} px spare</span>`:'none'}</td></tr>`};
+ $('out').innerHTML=`<div class="hero"><b>${mult}×</b><span>${sp(big[0])}<i class="op">${cmp}</i>${sp(big[1])}</span></div>
+<table class="tbl"><thead><tr><th></th><th>${nA}</th><th>${nB}</th><th>Difference</th></tr></thead><tbody>
+${row('Total pixels',nf(A.px),nf(B.px),sg(B.px-A.px),pct(r))}
+</tbody></table>
+<p class="h3">Scaling</p>
+<table class="tbl"><thead><tr><th></th><th>Exact fit</th><th>Whole-number scale</th></tr></thead><tbody>${fit(A,B)}${fit(B,A)}</tbody></table>
+<p class="h3" style="margin-top:4px">More info</p>
+<table class="tbl"><thead><tr><th></th><th>${nA}</th><th>${nB}</th><th>Difference</th></tr></thead><tbody>
+${row('Aspect ratio',ratio(A.w,A.h),ratio(B.w,B.h),'','')}
+${row('Megapixels',(A.px/1e6).toFixed(2),(B.px/1e6).toFixed(2),((B.px>=A.px)?'+':'−')+Math.abs((B.px-A.px)/1e6).toFixed(2),'')}
+</tbody></table>`;
+
+}
+['aw','ah','bw','bh'].forEach(id=>{const e=$(id);e.addEventListener('input',render);
+ let f=false;e.addEventListener('focus',()=>{f=true;setTimeout(()=>e.select(),0)});
+ e.addEventListener('mouseup',ev=>{if(f){ev.preventDefault();f=false}});e.addEventListener('blur',()=>{f=false})});
+render();
+</script>
+<script src="../tools.js"></script>
+</body>
+</html>

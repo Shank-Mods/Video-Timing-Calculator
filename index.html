@@ -30,10 +30,22 @@ input:focus,select:focus{outline:2px solid var(--ac);outline-offset:-1px}
 .f input[type=text]{width:100%;box-sizing:border-box;text-align:right}
 .f span,.u{color:var(--mut);font-size:.85em}
 input[type=radio]{accent-color:var(--ac);width:18px;height:18px;margin:0}
-.act{grid-column:1/-1;display:flex;justify-content:space-between;color:var(--mut);font-size:.9em}
-#err{color:var(--er);min-height:1.3em;margin:4px 2px}
+.act{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px 12px;color:var(--mut);font-size:.9em}.act label{color:var(--fg);font-size:1.05em}
+#err{color:var(--er);margin:4px 2px}#err:empty{display:none}
 .row label{display:flex;align-items:center;gap:8px}input[type=checkbox]{accent-color:var(--ac);width:18px;height:18px;margin:0}
 .row{display:flex;gap:8px;align-items:center;justify-content:space-between}
+fieldset{min-width:0}
+.xp{margin-top:30px;border-style:dashed;background:transparent}
+.btn{font:inherit;padding:6px 10px;border:1px solid var(--line);border-radius:4px;background:var(--panel);color:var(--ink);cursor:pointer;white-space:nowrap}
+.btn:hover:not(:disabled),.qbtn:hover:not(:disabled){border-color:var(--ac)}.btn:disabled,.qbtn:disabled{opacity:.5;cursor:default}
+.btn:focus-visible,.qbtn:focus-visible{outline:2px solid var(--ac);outline-offset:1px}
+.xrow{position:relative;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.xrow select{flex:1 1 160px}
+.qbtn{width:28px;height:28px;padding:0;border-radius:50%;border:1px solid var(--line);background:var(--in);color:var(--ac);font:600 13px/1 "IBM Plex Sans",system-ui,sans-serif;cursor:help}
+.qbtn[aria-expanded=true]{border-color:var(--ac)}
+.xpop{position:absolute;left:0;right:0;top:100%;z-index:20;margin-top:6px;padding:8px 10px;background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,.25);font-size:.8em;line-height:1.45}
+.xpop[hidden]{display:none}
+#xout{margin:8px 0 0;padding:6px 8px;max-width:100%;background:var(--in);border:1px solid var(--line);border-radius:4px;font:12px/1.4 "IBM Plex Mono",ui-monospace,monospace;white-space:pre-wrap;overflow-wrap:anywhere;user-select:text}
 </style></head><body><main>
 <h1>Timing Calculator</h1>
 <p class="sub">Calculate exact video timings, including blanking, sync and porch values, for a display mode. Port of the timing math in CRU.</p>
@@ -46,7 +58,10 @@ input[type=radio]{accent-color:var(--ac);width:18px;height:18px;margin:0}
 </fieldset>
 <fieldset><legend>Frequency</legend><div class="f" id="freq"></div></fieldset>
 <div id="err"></div>
-<div class="row"><label><input type="checkbox" id="il">Interlaced</label></div>
+<fieldset class="xp"><legend>Export</legend>
+<div class="xrow"><select id="xfmt" aria-label="Export format"></select><button type="button" class="btn" id="xcopy">Copy</button><button type="button" class="btn" id="xdl">Download</button><button type="button" class="qbtn" id="xq" aria-expanded="false" aria-controls="xpop" aria-label="How to use this export">?</button><div id="xpop" class="xpop" role="tooltip" hidden></div></div>
+<pre id="xout"></pre>
+</fieldset>
 <p style="color:var(--mut);font-size:.75em;margin:14px 2px 0">Based on the incredible free software <a href="https://www.monitortests.com/forum/Thread-Custom-Resolution-Utility-CRU" target="_blank" rel="noopener" style="color:var(--ac)">Custom Resolution Utility (CRU) by ToastyX</a>. This calculator was made by a dummy using an LLM, and has no affiliation to CRU or ToastyX.</p></main>
 <script>
 const S={il:false,man:true,mode:9,ha:640,va:480,hf:48,hs:32,hb:480,vf:4,vs:4,vb:4,hbl:0,htot:0,vbl:0,vtot:0,hp:1,vp:0,
@@ -146,7 +161,7 @@ $('grid').insertAdjacentHTML('beforeend',ROWS.map(([n,h,v,r],i)=>{
  const lab=r===undefined?`<span>${n}:</span>`:`<label><input type="radio" name="last" value="${r}">${n}:</label>`;
  return lab+`<input type="text" inputmode="numeric" id="${h}"><input type="text" inputmode="numeric" id="${v}">`}).join(''));
 $('freq').innerHTML=FR.map(([n,k,u,r])=>`<label><input type="radio" name="lr" value="${r}">${n}:</label><input type="text" inputmode="decimal" id="${k}"><span>${u}</span>`).join('')
- +'<div class="act"><span id="avr"></span><span id="ahr"></span></div>';
+ +'<div class="act"><label><input type="checkbox" id="il">Interlaced</label><span id="avr"></span></div>';
 const dig=()=>S.prec==100?2:3;
 const fmt={vrate:v=>(v/1000).toFixed(3),hrate:v=>(v/1000).toFixed(3),pclock:v=>(v/S.prec).toFixed(dig())};
 const parse={vrate:x=>Math.round(parseFloat(x)*1000),hrate:x=>Math.round(parseFloat(x)*1000),pclock:x=>Math.round(parseFloat(x)*S.prec)};
@@ -162,9 +177,8 @@ function render(){
  for(const[i,k]of RK.entries())$(k).readOnly=!(lr==i);
  $('mode').value=S.mode;$('hp').value=S.hp;$('vp').value=S.vp;$('il').checked=S.il;
  $('hp').disabled=$('vp').disabled=false;
- $('avr').textContent=ok?'Actual: '+fmt.vrate(S.avr)+' Hz':'';
- $('ahr').textContent=ok?'Actual: '+fmt.hrate(S.ahr)+' kHz':'';
- $('err').textContent=S.err}
+ $('avr').textContent=ok&&fmt.vrate(S.avr)!==fmt.vrate(S.vrate)?'Actual: '+fmt.vrate(S.avr)+' Hz':'';
+ $('err').textContent=S.err;xrender()}
 function upd(){calc();render()}
 document.addEventListener('input',e=>{const k=e.target.id;
  if(KEYS.includes(k))S[k]=parseInt(e.target.value,10);
@@ -178,6 +192,67 @@ document.querySelectorAll('input[type=text]').forEach(el=>{let sel=false;
  el.addEventListener('focus',()=>{sel=true;el.select();setTimeout(()=>el.select(),0)});
  el.addEventListener('mouseup',e=>{if(sel){e.preventDefault();sel=false}});
  el.addEventListener('blur',()=>{sel=false})});
+
+// ---- Export formats ----
+const hzTxt=()=>String(Number((S.avr/1000).toFixed(3)));
+const xn=()=>`${S.ha}x${S.va}_${(S.avr/1000).toFixed(2)}`;
+const xt=()=>`${(S.pclock/S.prec).toFixed(dig())} ${S.ha} ${S.ha+S.hf} ${S.ha+S.hf+S.hs} ${S.htot} ${S.va} ${S.va+S.vf} ${S.va+S.vf+S.vs} ${S.vtot} ${S.hp?'+':'-'}hsync ${S.vp?'+':'-'}vsync${S.il?' Interlace':''}`;
+const X={
+ x11:{label:'Linux Modeline',file:'modeline.txt',make(){return `Modeline "${xn()}" ${xt()}`},
+  note:()=>'Paste into the Monitor section of xorg.conf.'},
+ xrandr:{label:'Linux xrandr',file:'modeline.sh',make(){return `xrandr --newmode "${xn()}" ${xt()}`},
+  note:()=>`Run this line, then: xrandr --addmode <OUTPUT> "${xn()}" (run xrandr alone to list output names).`},
+ mister:{label:'MiSTer FPGA',file:'MiSTer.ini',make(){
+  if(S.il)return null;const{ha,hf,hs,hb,va,vf,vs,vb}=S;
+  return `video_mode=${ha},${hf},${hs},${hb},${va},${vf},${vs},${vb},${Math.round(S.pclock*1000/S.prec)},${S.hp?'+':'-'}hsync,${S.vp?'+':'-'}vsync`},
+  none:'MiSTer video modes are progressive only. Turn off Interlaced to export.',
+  note:()=>S.il?'':'Add under [MiSTer] in MiSTer.ini (video_mode=). The trailing +hsync/-vsync fields need a recent MiSTer build; delete them if yours predates them.'},
+ pi:{label:'Raspberry Pi',file:'config.txt',make(){
+  if(S.il)return null;const{ha,hf,hs,hb,va,vf,vs,vb}=S,r=ha/va,ar=[[4/3,1],[16/9,3],[5/4,4],[16/10,5],[15/9,6],[21/9,7]].find(x=>Math.abs(r-x[0])<.02);
+  return `hdmi_group=2\nhdmi_mode=87\nhdmi_timings=${ha} ${S.hp?1:0} ${hf} ${hs} ${hb} ${va} ${S.vp?1:0} ${vf} ${vs} ${vb} 0 0 0 ${Math.round(S.avr/1000)} 0 ${Math.round(S.pclock*1e6/S.prec)} ${ar?ar[1]:0}`},
+  none:'Interlaced timings are not exported for Raspberry Pi. Turn off Interlaced to export.',
+  note:()=>S.il?'':'Add these lines to config.txt on the boot partition. They apply to the legacy firmware video driver and are ignored under the KMS/DRM driver.'},
+ rt4k:{label:'RetroTINK-4K',file:'custom1.txt',make(){
+  const{ha,hf,hs,hb,va,vf,vs,vb,il}=S,
+   vf2=il?Math.floor(vf/2):vf,vs2=il?Math.floor(vs/2):vs,vbl=il?Math.floor((vf+vs+vb)/2):vf+vs+vb;
+  return `${ha}, ${hf}, ${hs}, ${hf+hs+hb}, ${S.hp?1:0}, ${va}, ${vf2}, ${vs2}, ${vbl}, ${S.vp?1:0}, ${hzTxt()}, "${ha}x${va}${il?'i':'p'}${hzTxt()}"${il?', 1':''}`},
+  note:()=>'Save as custom1.txt (custom2.txt to custom4.txt for the other slots) on the RT4K SD card.'+(S.il?' Interlaced output needs experimental firmware 1.5.1 or newer.':'')},
+ pfx:{label:'PixelFX Morph / GEM',file:'modeline.ini',make(){
+  if(S.il)return null;
+  const{ha,hf,hs,hb,htot,va,vf,vs,vb,vtot}=S;
+  let nm=`${ha}x${va}`;if(nm.length>8)nm=`${va}p${Math.round(S.avr/1000)}`;if(nm.length>8)nm=`${va}p`;
+  const ln=`custom1=${nm},${htot},${ha},${hf},${hb},${hs},${vtot},${va},${vf},${vb},${vs},${S.hp?1:0},${S.vp?1:0},${Math.max(1,Math.round(va/240)).toFixed(1)},0,0`;
+  return `[NTSC]\n${ln}\n[PAL]\n${ln}`},
+  none:'PixelFX custom modelines support progressive modes only. Turn off Interlaced to export.',
+  note:()=>S.il?'':
+   `Save as modeline.ini and upload it in the device web interface (names are limited to 8 characters; use custom2 or custom3 for other slots). The device derives the pixel clock from the source frame rate: ${(S.htot*S.vtot*60/1e6).toFixed(2)} MHz for NTSC (60 Hz), ${(S.htot*S.vtot*50/1e6).toFixed(2)} MHz for PAL (50 Hz).`}
+};
+$('xfmt').innerHTML=Object.entries(X).map(([k,v])=>`<option value="${k}">${v.label}</option>`).join('');
+let xtext=null;
+function xrender(){
+ const f=X[$('xfmt').value],ok=!S.err;
+ xtext=ok?f.make():null;
+ $('xout').textContent=xtext??(ok?(f.none||'This format cannot represent the current timing.'):'Fix the timing error above to export.');
+ $('xpop').textContent=ok?f.note():'';$('xq').disabled=!ok;
+ $('xcopy').disabled=$('xdl').disabled=xtext==null}
+async function copyText(t){
+ try{await navigator.clipboard.writeText(t);return true}catch(_){}
+ try{const a=document.createElement('textarea');a.value=t;a.style.cssText='position:fixed;opacity:0';document.body.appendChild(a);a.select();const ok=document.execCommand('copy');a.remove();return ok}catch(_){return false}}
+const flash=(b,m)=>{const o=b.dataset.o||b.textContent;b.dataset.o=o;b.textContent=m;setTimeout(()=>b.textContent=o,1600)};
+$('xfmt').onchange=xrender;
+let xpin=false;const xq=$('xq'),xp=$('xpop');
+const xshow=o=>{xp.hidden=!o;xq.setAttribute('aria-expanded',o?'true':'false')};
+xq.addEventListener('mouseenter',()=>xshow(true));
+xq.addEventListener('mouseleave',()=>{if(!xpin)xshow(false)});
+xq.addEventListener('focus',()=>xshow(true));
+xq.addEventListener('blur',()=>{if(!xpin)xshow(false)});
+xq.addEventListener('click',e=>{e.stopPropagation();xpin=!xpin;xshow(xpin)});
+document.addEventListener('click',()=>{xpin=false;xshow(false)});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){xpin=false;xshow(false)}});
+$('xcopy').onclick=async()=>{if(xtext!=null)flash($('xcopy'),await copyText(xtext)?'Copied':'Copy failed: use Download')};
+$('xdl').onclick=()=>{if(xtext==null)return;const a=document.createElement('a');
+ a.href=URL.createObjectURL(new Blob([xtext+'\n'],{type:'text/plain'}));a.download=X[$('xfmt').value].file;
+ document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
 upd();
 }else globalThis.T={S,calc};
 </script>
